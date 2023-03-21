@@ -7,8 +7,9 @@ license = "AGPL-3.0-only"
 readme = "README.md"
 
 [tool.poetry.dependencies]
+setuptools = "^67.6.0"
 python = "^3.10"
-#pytodotxt = "^1.4.3"
+pytodotxt = "^1.4.3"
 rich = "^13.3.2"
 
 
