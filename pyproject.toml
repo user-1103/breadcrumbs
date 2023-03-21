@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "breadcrumbs"
+version = "0.1.0"
+description = "A task manager fror people who often ask them selves \"How did I get here?\"."
+authors = ["USER 1103 <79700949+user-1103@users.noreply.github.com>"]
+license = "AGPL-3.0-only"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pytodotxt = "^1.4.3"
+rich = "^13.3.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
