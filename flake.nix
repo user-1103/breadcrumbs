@@ -19,12 +19,6 @@
                     buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
                   }
                 );
-              pytest = super.pytest.overridePythonAttrs
-                (
-                  old: {
-                    buildInputs = (old.buildInputs or [ ]) ++ [ super.hatchling ];
-                  }
-                );
             });
         };
       });
