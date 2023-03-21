@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pytodotxt = "^1.4.3"
+#pytodotxt = "^1.4.3"
 rich = "^13.3.2"
 
 
