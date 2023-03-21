@@ -14,16 +14,10 @@
           preferWheels = true;
           overrides = pkgs.${system}.poetry2nix.defaultPoetryOverrides.extend
             (self: super: {
-              rich = super.rich.overridePythonAttrs
-                (
-                  old: {
-                    buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
-                  }
-                );
               pytodotxt = super.pytodotxt.overridePythonAttrs
                 (
                   old: {
-                    buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools-scm ];
+                    buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
                   }
                 );
             });
