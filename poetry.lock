@@ -53,18 +53,6 @@ files = [
 plugins = ["importlib-metadata"]
 
 [[package]]
-name = "pytodotxt"
-version = "1.4.3"
-description = "Library to access todo.txt-like task lists"
-category = "main"
-optional = false
-python-versions = ">=3.0"
-files = [
-    {file = "pytodotxt-1.4.3-py3-none-any.whl", hash = "sha256:cd0eaadb2c0fb98f74385420cdd4cb420857641c6acd68c0c3f547f7d5e927fc"},
-    {file = "pytodotxt-1.4.3.tar.gz", hash = "sha256:c198e15b455915c6b8f6d33a8a40a4e337b3da525d46b67879e2459ca4b96266"},
-]
-
-[[package]]
 name = "rich"
 version = "13.3.2"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
@@ -86,4 +74,4 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3809e22e0d3a5447302c17b971fdf165b1ddc67a139173e2d2650c108daa9a87"
+content-hash = "50e6422e722187efcc51b82dde5b70c0020e3950aad470108b097d34bbc06f99"
