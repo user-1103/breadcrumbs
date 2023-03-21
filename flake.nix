@@ -20,6 +20,12 @@
                     buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
                   }
                 );
+              pytodotxt = super.pytodotxt.overridePythonAttrs
+                (
+                  old: {
+                    buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools-scm ];
+                  }
+                );
             });
         };
       });
