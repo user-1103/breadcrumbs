@@ -11,6 +11,7 @@
       packages = forAllSystems (system: {
         default = pkgs.${system}.poetry2nix.mkPoetryApplication {
           projectDir = self;
+          preferWheels = true;
           overrides = pkgs.${system}.poetry2nix.defaultPoetryOverrides.extend
             (self: super: {
               rich = super.rich.overridePythonAttrs
