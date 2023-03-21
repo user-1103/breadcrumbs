@@ -13,7 +13,7 @@
           projectDir = self;
           overrides = pkgs.${system}.poetry2nix.defaultPoetryOverrides.extend
             (self: super: {
-              rich = super.discord-py.overridePythonAttrs
+              rich = super.rich.overridePythonAttrs
                 (
                   old: {
                     buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
