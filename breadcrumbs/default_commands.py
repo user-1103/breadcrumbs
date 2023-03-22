@@ -2,8 +2,10 @@
 The default commands that are available.
 """
 from datetime import datetime, timedelta
+from time import time
 from pytodotxt import TodoTxt, Task
 from breadcrumbs.display import crumb, console, info, clear, figure
+from breadcrumbs.default_hooks import _check_future
 from re import search, I
 from itertools import dropwhile, filterfalse
 from rich.table import Table
@@ -17,12 +19,10 @@ def _add(loaf: object, text: str) -> None:
     :param text: the text of the file in todo.txt format.
     """
     tmp = Task(text)
-    time = datetime.now()
-    tmp_time = time.isoformat("-", "minutes")
-    tmp.add_attribute("TIME", tmp_time)
+    time = datetime.now().date()
+    tmp_time = time.time().isoformat("minutes")
+    tmp.add_attribute("TIME", tmp_time.replace(":","-"))
     tmp.creation_date= time
-    tmp_hash = md5(str(tmp).encode("utf-8"))
-    tmp.add_attribute("ID", tmp_hash.hexdigest())
     loaf.crumbs.add(tmp)
     loaf.crumbs.save(safe=True)
     crumb([tmp])
@@ -34,6 +34,14 @@ def _nop(loaf: object) -> None:
     :param loaf: The loaf being edited.
     """
     info("Use ?help to list commands")
+    
+def _show_future(loaf: object) -> None:
+    """
+    See the future.
+
+    :param loaf: The loaf being edited.
+    """
+    _check_future(loaf)
 
 def _help(loaf: object) -> None:
     """
@@ -41,7 +49,7 @@ def _help(loaf: object) -> None:
 
     :param loaf: The loaf being edited.
     """
-    t = Table(title="Crumb Commands.")
+    t = Table(title="Crumb Commands.", expand=True)
     t.add_column("Regex Of What You Type...")
     t.add_column("What Happens...")
     t.add_column("Command Or Macro?")

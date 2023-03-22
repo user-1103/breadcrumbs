@@ -2,19 +2,32 @@
 Module for displaying the data.
 """
 
+from re import sub
 from typing import Any, List
 from rich.panel import Panel
 from pytodotxt import Task
 from rich.syntax import Syntax
-import pygments.lexers.textfmts.TodotxtLexer as lex
-
+from breadcrumbs.lexer import TodotxtLexer
 # Wether to print in a undecorated form
 SIMPLE = False
 # To print debug info
-DEBUG = True
+DEBUG = False
+# The todo lexer to Use
+lex = TodotxtLexer()
 
 from rich.console import Console, RenderableType
 console = Console()
+
+def easy_lex(text: Any) -> Syntax:
+    """
+    Wrap text in a syntax block.
+
+    :param text: the text to wrap.
+    :return: the wrapped object.
+    """
+    tmp = Syntax(str(text), lexer=lex, word_wrap = True,
+                               theme="ansi_light")
+    return tmp
 
 def clear() -> None:
     """
@@ -41,7 +54,8 @@ def crumb(crumbs: List[Task], title: str = '') -> None:
         if (SIMPLE):
             print(str(c.description))
         else:
-            tmp = Panel(Syntax(str(c.description), lexer="todotxt"))
+            des = str(c.description)
+            tmp = Panel(easy_lex(des))
             console.print(tmp)
 
 def figure(figures: List[RenderableType], title: str = '') -> None:

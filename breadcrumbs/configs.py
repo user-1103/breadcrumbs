@@ -6,6 +6,7 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Dict, Any
 import breadcrumbs.default_commands as dc
+import breadcrumbs.default_hooks as dh
 import importlib.util
 import sys
 
@@ -53,6 +54,11 @@ DEFAULT_CONFIG = {
         HookTypes.PRE: [
         ],
         HookTypes.POST: [
+            dh._check_time
+        ],
+        HookTypes.PREMACRO: [
+        ],
+        HookTypes.OK: [
         ],
         HookTypes.ERR: [
         ]
@@ -60,6 +66,7 @@ DEFAULT_CONFIG = {
     "cmds": {
         r"^\?help": dc._help,
         r"^\?r (.*)": dc._reg,
+        r"^\?f": dc._show_future,
         r"^\?d": dc._debug,
         r"^\?s (.*)": dc._search,
         r"^\?l ?(.*)": dc._list,
@@ -69,7 +76,9 @@ DEFAULT_CONFIG = {
         r"^(.*)": dc._add
     },
     "macros": {
-        r"\.\.test (.*), (.*)\.?": r"TEST \2 \1"
+        r"\.\.s (.*)\.?": r"TRACK:\1", # start a tracking session
+        r"\.\.f (.*)\.?": r"FUTURE:\1", # Mark for the future
+        r"\.\.r (.*)\.?": r"REPEAT:\1" # Repeat str
     },
     "loaf": DEFAULT_LOAF_PATH,
     "config": DEFAULT_CONFIG_PATH

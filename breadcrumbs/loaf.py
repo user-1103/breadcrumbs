@@ -3,7 +3,7 @@ Contains Loaf based stuff.
 """
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Match, Union
+from typing import Any, Callable, Dict, List, Match, Tuple, Union
 from pytodotxt import TodoTxt, Task
 from argparse import ArgumentParser
 from re import search, sub
@@ -27,6 +27,19 @@ class Loaf():
     def __post_init__(self) -> None:
         self.crumbs = TodoTxt(Path(self.config_data["loaf"]))
         self.crumbs.parse()
+        def sort_days(x: Task) -> Tuple[int, int, int, int, int]:
+            day = x.creation_date
+            day_tup = tuple()
+            if (day is None):
+                day_tup = (1970, 1, 2)
+            else:
+                day_tup = day.timetuple()
+            time_txt = x.attributes.get("TIME", ["01-01"])[0]
+            time_list = time_txt.split("-")
+            time_tup = (*day_tup, int(time_list[0]), int(time_list[1]))
+            return time_tup
+        self.crumbs.tasks.sort(key=sort_days)
+        self.crumbs.save()
         def day_parse(x: Task) -> bool:
             tmp = x.creation_date
             if (tmp is None):

@@ -36,7 +36,7 @@ class TodotxtLexer(RegexLexer):
     # Project and context should have equal weight, and be in different colors
     Project = Generic.Error
     Context = String
-    Tag = Generic.Traceback
+    Tag = Keyword
 
     # If tag functionality is added, it should have the same weight as Project
     # and Context, and a different color. Generic.Traceback would work well.
@@ -48,7 +48,7 @@ class TodotxtLexer(RegexLexer):
     priority_regex = r'\([A-Z]\)'
     project_regex = r'\+\S+'
     context_regex = r'@\S+'
-    tag_regex = r"\w*:\w*"
+    tag_regex = r"\S*:\S*"
 
     # Compound regex expressions
     complete_one_date_regex = r'(x )(' + date_regex + r')'
