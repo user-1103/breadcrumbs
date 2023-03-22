@@ -50,20 +50,34 @@ def parse(user_input: str) -> None:
 
     :param user_input: The unprocessed user input.
     """
+    call_hooks(HookTypes.PREMACRO)
+    debug("CMD:")
+    debug(user_input)
+    LOAF.config_data.update({"current_cmd": user_input})
     user_input = expand_macros(user_input)
+    LOAF.config_data.update({"expanded_cmd": user_input})
+    debug("POSTMACRO:")
+    debug(user_input)
     args: Union[None, Match] = None
     cmd= lambda x,y: ...
     for cmd, reg in LOAF.config_data["cmds"].items():
         args = search(reg, user_input)
         if (args):
             break
+    debug("CMD TO CALL:")
+    debug(cmd)
+    call_hooks(HookTypes.PRE)
     try:
         if (args):
             cmd(LOAF, *args.groups())
         else:
             raise Exception("Could not find a way to parse this :(")
     except Exception as e:
+        call_hooks(HookTypes.ERR)
         err(e)
+    else:
+        call_hooks(HookTypes.OK)
+    call_hooks(HookTypes.POST)
 
 def call_hooks(hook: HookTypes) -> None:
     """

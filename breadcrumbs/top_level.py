@@ -3,10 +3,23 @@ Module that orchestrates the other modules.
 """
 
 from argparse import ArgumentParser
-from breadcrumbs.configs import load_config
+from breadcrumbs.configs import HookTypes, load_config
+from signal import SIGINT, signal
+from sys import exit
 
-from breadcrumbs.display import SIMPLE, DEBUG
-from breadcrumbs.loaf import Loaf, parse
+from breadcrumbs.display import SIMPLE, DEBUG, info, prompt
+from breadcrumbs.loaf import Loaf, call_hooks, parse
+
+def on_exit(signum, stack) -> None:
+    """
+    Calls the redigested EXIT hooks on kill signal
+    """
+    info("Mañana")
+    call_hooks(HookTypes.EXIT)
+    exit(0)
+
+
+signal(SIGINT, on_exit)
 
 def run() -> None:
     """
@@ -32,6 +45,7 @@ def run() -> None:
         SIMPLE = True
     if (args.debug):
         DEBUG = True
+    call_hooks(HookTypes.INIT)
     if (args.crumb_command):
         parse(args.crumb_command)
     else:
@@ -43,9 +57,9 @@ def repl() -> None:
 
     :params loaf: The loaf to edit in the repl.
     """
-
-
-    
+    while True:
+        tmp = prompt()
+        parse(tmp)
 
 
 

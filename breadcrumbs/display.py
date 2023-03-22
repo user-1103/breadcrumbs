@@ -2,7 +2,7 @@
 Module for displaying the data.
 """
 
-from typing import List
+from typing import Any, List
 from rich.panel import Panel
 from pytodotxt import Task
 
@@ -31,7 +31,7 @@ def crumb(crumbs: List[Task], title: str) -> None:
             console.line()
             console.print(tmp)
 
-def debug(text: str) -> None:
+def debug(text: Any) -> None:
     """
     Prints debug info if enabled.
 

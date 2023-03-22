@@ -9,14 +9,18 @@ import breadcrumbs.default_commands as dc
 import importlib.util
 import sys
 
+from breadcrumbs.display import debug
+
 class HookTypes(Enum):
     """
     The types of hooks that can be hooked.
     """
     INIT = auto()
     EXIT = auto()
+    PREMACRO = auto()
     PRE = auto()
     POST = auto()
+    OK = auto()
     ERR = auto()
 
 def collect_config(path: Path) -> Dict[str, Any]:
@@ -75,4 +79,5 @@ def load_config() -> Dict[str, Any]:
     """
     user_conf = collect_config(DEFAULT_CONFIG_PATH)
     ret = DEFAULT_CONFIG | user_conf
+    debug(ret)
     return ret
