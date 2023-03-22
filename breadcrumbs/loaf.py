@@ -7,18 +7,12 @@ from typing import Any, Callable, Dict, List, Match, Union
 from pytodotxt import TodoTxt, Task
 from argparse import ArgumentParser
 from re import search, sub
-from breadcrumbs.display import printer
+from breadcrumbs.display import crumb, err, debug
 from datetime import datetime, timedelta
 from itertools import filterfalse
 from enum import Enum, auto
 from functools import wraps
 from breadcrumbs.configs import HookTypes, load_config
-
-class CmdErr(Exception):
-    """
-    When a command can not be executed.
-    """
-    ...
 
 @dataclass
 class Loaf():
@@ -35,7 +29,7 @@ class Loaf():
         tmp = \
             lambda x : (x.creation_date >= (datetime.now() - timedelta(days=1)))
         res = list(filterfalse(tmp, self.crumbs.tasks))
-        printer.crumb(res, "24hr OF CRUMBS")
+        crumb(res, "24hr OF CRUMBS")
 
 def expand_macros(user_input: str) -> str:
     """
@@ -68,8 +62,8 @@ def parse(user_input: str) -> None:
             cmd(LOAF, *args.groups())
         else:
             raise Exception("Could not find a way to parse this :(")
-    except CmdErr as e:
-        printer.err(e)
+    except Exception as e:
+        err(e)
 
 def call_hooks(hook: HookTypes) -> None:
     """
@@ -80,9 +74,9 @@ def call_hooks(hook: HookTypes) -> None:
     h = LOAF.config_data["hooks"].get(hook, None)
     if (not h):
         return
-    printer.debug(f"Calling internal hook {hook}")
+    debug(f"Calling internal hook {hook}")
     for hook_call in h:
-        print.debug(f"Calling {hook_call.__name__}")
+        debug(f"Calling {hook_call.__name__}")
         hook_call(LOAF)
 
 CONFIG = load_config()
