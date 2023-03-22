@@ -58,16 +58,18 @@ DEFAULT_CONFIG = {
         ]
     },
     "cmds": {
-        r"^\?\?r (.*)": dc._reg,
-        r"^\?\?d": dc._debug,
-        r"^\?\?f (.*)": dc._search,
-        r"^\?\?l ?(.*)": dc._list,
-        r"^\?\?a (.*)": dc._archive,
-        r"^\?\?.*": dc._nop,
+        r"^\?help": dc._help,
+        r"^\?r (.*)": dc._reg,
+        r"^\?d": dc._debug,
+        r"^\?s (.*)": dc._search,
+        r"^\?l ?(.*)": dc._list,
+        r"^\?a (.*)": dc._archive,
+        r"^\?A (.*)": dc._unarchive,
+        r"^\?.*": dc._nop,
         r"^(.*)": dc._add
     },
     "macros": {
-        r"\.\.test (.*), (.*)\.": r"TEST \2 \1"
+        r"\.\.test (.*), (.*)\.?": r"TEST \2 \1"
     },
     "loaf": DEFAULT_LOAF_PATH,
     "config": DEFAULT_CONFIG_PATH

@@ -3,9 +3,11 @@ The default commands that are available.
 """
 from datetime import datetime, timedelta
 from pytodotxt import TodoTxt, Task
-from breadcrumbs.display import crumb, console
+from breadcrumbs.display import crumb, console, info, clear, figure
 from re import search, I
 from itertools import dropwhile, filterfalse
+from rich.table import Table
+from hashlib import md5
 
 def _add(loaf: object, text: str) -> None:
     """
@@ -15,6 +17,12 @@ def _add(loaf: object, text: str) -> None:
     :param text: the text of the file in todo.txt format.
     """
     tmp = Task(text)
+    time = datetime.now()
+    tmp_time = time.isoformat("-", "minutes")
+    tmp.add_attribute("TIME", tmp_time)
+    tmp.creation_date= time
+    tmp_hash = md5(str(tmp).encode("utf-8"))
+    tmp.add_attribute("ID", tmp_hash.hexdigest())
     loaf.crumbs.add(tmp)
     loaf.crumbs.save(safe=True)
     crumb([tmp])
@@ -25,6 +33,23 @@ def _nop(loaf: object) -> None:
 
     :param loaf: The loaf being edited.
     """
+    info("Use ?help to list commands")
+
+def _help(loaf: object) -> None:
+    """
+    Print the available crumb commands.
+
+    :param loaf: The loaf being edited.
+    """
+    t = Table(title="Crumb Commands.")
+    t.add_column("Regex Of What You Type...")
+    t.add_column("What Happens...")
+    t.add_column("Command Or Macro?")
+    for k, v in loaf.config_data["cmds"].items():
+        t.add_row(k, v.__doc__, "Command")
+    for k, v in loaf.config_data["macros"].items():
+        t.add_row(k, v, "Macro")
+    figure([t])
 
 def _archive(loaf: object, crumb_id: str) -> None:
     """
@@ -34,13 +59,31 @@ def _archive(loaf: object, crumb_id: str) -> None:
     :param crumb_id: the id of the crumb.
     """
     tmp = \
-        lambda x : search(".*{search_str}.*", str(x))
+        lambda x : ((not bool(search(crumb_id, str(x)))) or bool(x.is_completed))
     res = list(filterfalse(tmp, loaf.crumbs.tasks))
-    crumb(res, "DELETE")
-    for crumb in res:
-        crumb.is_completed = True
-        crumb.completion_date = datetime.now()
+    crumb(res, "ARCHIVED")
+    for c in res:
+        c.is_completed = True
+        c.completion_date = datetime.now()
     loaf.crumbs.save(safe=True)
+    info(f"Archived {len(res)} crumbs.")
+
+def _unarchive(loaf: object, crumb_id: str) -> None:
+    """
+    UNarchive a crumb from a loaf.
+
+    :param loaf: The loaf being edited.
+    :param crumb_id: the id of the crumb.
+    """
+    tmp = \
+        lambda x : ((not bool(search(crumb_id, str(x)))) or (not bool(x.is_completed)))
+    res = list(filterfalse(tmp, loaf.crumbs.tasks))
+    crumb(res, "UN-ARCHIVED")
+    for c in res:
+        c.is_completed = False
+        c.completion_date = None
+    loaf.crumbs.save(safe=True)
+    info(f"Un-Archived {len(res)} crumbs.")
 
 def _search(loaf: object, search_str: str) -> None:
     """
@@ -61,7 +104,6 @@ def _reg(loaf: object, search_str: str) -> None:
     tmp = \
         lambda x : not bool(search(search_str, str(x), I))
     res = list(filterfalse(tmp, loaf.crumbs.tasks))
-    breakpoint()
     crumb(res, "SEARCH")
 
 def _list(loaf: object, count: str = "") -> None:
@@ -79,11 +121,12 @@ def _list(loaf: object, count: str = "") -> None:
         def day_parse(x: Task) -> bool:
             tmp = x.creation_date
             if (tmp is None):
-                tmp = datetime.now()
-            ret = (tmp <= (datetime.now() - timedelta(days=1)))
+                tmp = datetime.now().date()
+            ret = (tmp <= (datetime.now() - timedelta(days=1)).date())
+            ret = (ret or bool(x.is_completed))
             return ret
         res = list(filterfalse(day_parse, loaf.crumbs.tasks))
-        console.clear()
+        clear()
         crumb(res, "24hr OF CRUMBS")
 
 def _debug(loaf: object) -> None:

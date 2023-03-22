@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Match, Union
 from pytodotxt import TodoTxt, Task
 from argparse import ArgumentParser
 from re import search, sub
-from breadcrumbs.display import crumb, err, debug, console
+from breadcrumbs.display import crumb, err, debug, clear
 from datetime import datetime, timedelta
 from itertools import filterfalse
 from enum import Enum, auto
@@ -30,11 +30,12 @@ class Loaf():
         def day_parse(x: Task) -> bool:
             tmp = x.creation_date
             if (tmp is None):
-                tmp = datetime.now()
-            ret = (tmp <= (datetime.now() - timedelta(days=1)))
+                tmp = datetime.now().date()
+            ret = (tmp <= (datetime.now() - timedelta(days=1)).date())
+            ret = (ret or bool(x.is_completed))
             return ret
         res = list(filterfalse(day_parse, self.crumbs.tasks))
-        console.clear()
+        clear()
         crumb(res, "24hr OF CRUMBS")
 
 def expand_macros(user_input: str) -> str:
