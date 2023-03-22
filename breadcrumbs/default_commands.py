@@ -2,13 +2,12 @@
 The default commands that are available.
 """
 from datetime import datetime, timedelta
-from breadcrumbs.loaf import Loaf
 from pytodotxt import TodoTxt, Task
 from breadcrumbs.display import crumb
 from re import search, I
 from itertools import filterfalse
 
-def _add(loaf: Loaf, text: str) -> None:
+def _add(loaf: object, text: str) -> None:
     """
     Adds a crumb to the loaf.
 
@@ -18,9 +17,9 @@ def _add(loaf: Loaf, text: str) -> None:
     tmp = Task(text)
     loaf.crumbs.add(tmp)
     loaf.crumbs.save(safe=True)
-    crumb(tmp)
+    crumb([tmp])
 
-def _archive(loaf: Loaf, crumb_id: str) -> None:
+def _archive(loaf: object, crumb_id: str) -> None:
     """
     Archive a crumb from a loaf.
 
@@ -36,7 +35,7 @@ def _archive(loaf: Loaf, crumb_id: str) -> None:
         crumb.completion_date = datetime.now()
     loaf.crumbs.save(safe=True)
 
-def _search(loaf: Loaf, search_str: str) -> None:
+def _search(loaf: object, search_str: str) -> None:
     """
     Searches (fuzzy, kinda) the loaf for a given query.
 
@@ -46,7 +45,7 @@ def _search(loaf: Loaf, search_str: str) -> None:
     _reg(loaf, f".*{search_str}.*")
 
 
-def _reg(loaf: Loaf, search_str: str) -> None:
+def _reg(loaf: object, search_str: str) -> None:
     """
     Searches the loaf for a given query WITH regex!
 
@@ -58,7 +57,7 @@ def _reg(loaf: Loaf, search_str: str) -> None:
     res = list(filterfalse(tmp, loaf.crumbs.tasks))
     crumb(res, "SEARCH")
 
-def _list(loaf: Loaf, count: str = "") -> None:
+def _list(loaf: object, count: str = "") -> None:
     """
     Show data view.
 
