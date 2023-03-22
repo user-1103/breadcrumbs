@@ -25,7 +25,7 @@ class Loaf():
     crumbs: TodoTxt = None
 
     def __post_init__(self) -> None:
-        self.breadcrumbs = TodoTxt(Path(self.config_data["loaf"]))
+        self.crumbs = TodoTxt(Path(self.config_data["loaf"]))
         tmp = \
             lambda x : (x.creation_date >= (datetime.now() - timedelta(days=1)))
         res = list(filterfalse(tmp, self.crumbs.tasks))
