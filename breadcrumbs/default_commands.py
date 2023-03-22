@@ -4,7 +4,7 @@ The default commands that are available.
 from datetime import datetime, timedelta
 from breadcrumbs.loaf import Loaf
 from pytodotxt import TodoTxt, Task
-from breadcrumbs.display import printer
+from breadcrumbs.display import crumb
 from re import search, I
 from itertools import filterfalse
 
@@ -18,7 +18,7 @@ def _add(loaf: Loaf, text: str) -> None:
     tmp = Task(text)
     loaf.crumbs.add(tmp)
     loaf.crumbs.save(safe=True)
-    printer.crumb(tmp)
+    crumb(tmp)
 
 def _archive(loaf: Loaf, crumb_id: str) -> None:
     """
@@ -30,12 +30,10 @@ def _archive(loaf: Loaf, crumb_id: str) -> None:
     tmp = \
         lambda x : search(".*{search_str}.*", str(x))
     res = list(filterfalse(tmp, loaf.crumbs.tasks))
-    printer.crumb(res, "DELETE")
-    verification = printer.prompt(f"Remove {len(res)} items? [y/N]", ["y", "n"])
-    if (verification is "y"):
-        for crumb in res:
-            crumb.is_completed = True
-            crumb.completion_date = datetime.now()
+    crumb(res, "DELETE")
+    for crumb in res:
+        crumb.is_completed = True
+        crumb.completion_date = datetime.now()
     loaf.crumbs.save(safe=True)
 
 def _search(loaf: Loaf, search_str: str) -> None:
@@ -58,7 +56,7 @@ def _reg(loaf: Loaf, search_str: str) -> None:
     tmp = \
         lambda x : search("{search_str}", str(x), I)
     res = list(filterfalse(tmp, loaf.crumbs.tasks))
-    printer.crumb(res, "SEARCH")
+    crumb(res, "SEARCH")
 
 def _list(loaf: Loaf, count: str = "") -> None:
     """
@@ -70,10 +68,10 @@ def _list(loaf: Loaf, count: str = "") -> None:
     try:
         count_int = int(count)
         res = loaf.breadcrumbs.tasks[(-1 * count):-1]
-        printer.crumb(res, f"{count_int} CRUMBS")
+        crumb(res, f"{count_int} CRUMBS")
     except Exception as e:
         tmp = \
             lambda x : (x.creation_date >= (datetime.now() - timedelta(days=1)))
         res = list(filterfalse(tmp, loaf.crumbs.tasks))
-        printer.crumb(res, "24hr OF CRUMBS")
+        crumb(res, "24hr OF CRUMBS")
 

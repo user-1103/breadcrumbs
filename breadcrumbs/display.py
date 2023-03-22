@@ -14,7 +14,7 @@ DEBUG = False
 from rich.console import Console
 console = Console()
 
-def crumb(crumbs: List[Task], title: str) -> None:
+def crumb(crumbs: List[Task], title: str = '') -> None:
     """
     Prints the crumbs provided.
 
@@ -24,11 +24,13 @@ def crumb(crumbs: List[Task], title: str) -> None:
     to_print = list()
     for c in crumbs:
         if (SIMPLE):
-            print(f"[{title}]")
+            if (title):
+                print(f"[{title}]")
             print(str(c.description))
         else:
             tmp = Panel.fit(str(c.description))
-            console.line()
+            if (title):
+                console.rule(title)
             console.print(tmp)
 
 def debug(text: Any) -> None:
@@ -40,7 +42,6 @@ def debug(text: Any) -> None:
     if (not DEBUG):
         return
     console.log(text)
-
 
 def err(e: Exception) -> None:
     """
@@ -69,5 +70,4 @@ def prompt()  -> str:
     :return: The picked choice.
     """
     return input(f"🡠 ")
-
 
