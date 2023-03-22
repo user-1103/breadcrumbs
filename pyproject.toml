@@ -12,7 +12,7 @@ pytodotxt = "^1.4.3"
 rich = "^13.3.2"
 
 [tool.poetry.scripts]
-breadcrumbs = "breadcrumbs:run"
+breadcrumbs = "breadcrumbs:main"
 
 [build-system]
 requires = ["poetry-core"]
