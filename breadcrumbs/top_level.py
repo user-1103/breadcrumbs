@@ -14,7 +14,7 @@ def on_exit(signum, stack) -> None:
     """
     Calls the redigested EXIT hooks on kill signal
     """
-    info("Mañana")
+    info(" Mañana")
     call_hooks(HookTypes.EXIT)
     exit(0)
 
@@ -60,6 +60,3 @@ def repl() -> None:
     while True:
         tmp = prompt()
         parse(tmp)
-
-
-

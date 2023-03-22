@@ -40,7 +40,7 @@ def collect_config(path: Path) -> Dict[str, Any]:
         ret = dict()
     return ret
 
-DEFAULT_PATH = ("~/.breadbox")
+DEFAULT_PATH = (".breadbox")
 DEFAULT_CONFIG_PATH = Path(f"{DEFAULT_PATH}/config.py")
 DEFAULT_LOAF_PATH = Path(f"{DEFAULT_PATH}/default.loaf")
 
@@ -59,9 +59,11 @@ DEFAULT_CONFIG = {
     },
     "cmds": {
         r"^\?\?r (.*)": dc._reg,
+        r"^\?\?d": dc._debug,
         r"^\?\?f (.*)": dc._search,
-        r"^\?\?l (.*)": dc._list,
+        r"^\?\?l ?(.*)": dc._list,
         r"^\?\?a (.*)": dc._archive,
+        r"^\?\?.*": dc._nop,
         r"^(.*)": dc._add
     },
     "macros": {

@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Match, Union
 from pytodotxt import TodoTxt, Task
 from argparse import ArgumentParser
 from re import search, sub
-from breadcrumbs.display import crumb, err, debug
+from breadcrumbs.display import crumb, err, debug, console
 from datetime import datetime, timedelta
 from itertools import filterfalse
 from enum import Enum, auto
@@ -26,9 +26,15 @@ class Loaf():
 
     def __post_init__(self) -> None:
         self.crumbs = TodoTxt(Path(self.config_data["loaf"]))
-        tmp = \
-            lambda x : (x.creation_date >= (datetime.now() - timedelta(days=1)))
-        res = list(filterfalse(tmp, self.crumbs.tasks))
+        self.crumbs.parse()
+        def day_parse(x: Task) -> bool:
+            tmp = x.creation_date
+            if (tmp is None):
+                tmp = datetime.now()
+            ret = (tmp <= (datetime.now() - timedelta(days=1)))
+            return ret
+        res = list(filterfalse(day_parse, self.crumbs.tasks))
+        console.clear()
         crumb(res, "24hr OF CRUMBS")
 
 def expand_macros(user_input: str) -> str:
@@ -50,25 +56,34 @@ def parse(user_input: str) -> None:
 
     :param user_input: The unprocessed user input.
     """
-    call_hooks(HookTypes.PREMACRO)
-    debug("CMD:")
+    if (not user_input):
+        return
+    debug("STAGE 0:")
     debug(user_input)
     LOAF.config_data.update({"current_cmd": user_input})
+    call_hooks(HookTypes.PREMACRO)
+    user_input = LOAF.config_data["current_cmd"]
+    debug("STAGE 1 (POST PREMACRO):")
+    debug(user_input)
     user_input = expand_macros(user_input)
     LOAF.config_data.update({"expanded_cmd": user_input})
-    debug("POSTMACRO:")
+    debug("STAGE 2 (POST MACRO):")
     debug(user_input)
     args: Union[None, Match] = None
     cmd= lambda x,y: ...
-    for cmd, reg in LOAF.config_data["cmds"].items():
+    for reg, cmd in LOAF.config_data["cmds"].items():
         args = search(reg, user_input)
         if (args):
             break
-    debug("CMD TO CALL:")
+    debug("STAGE 4 (POST CMD SEARCH):")
     debug(cmd)
+    LOAF.config_data.update({"cmd_match_obj": args})
     call_hooks(HookTypes.PRE)
+    args = LOAF.config_data["cmd_match_obj"]
     try:
         if (args):
+            debug("STAGE 5 (POST PRE):")
+            debug(args.groups())
             cmd(LOAF, *args.groups())
         else:
             raise Exception("Could not find a way to parse this :(")

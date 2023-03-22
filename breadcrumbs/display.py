@@ -9,7 +9,7 @@ from pytodotxt import Task
 # Wether to print in a undecorated form
 SIMPLE = False
 # To print debug info
-DEBUG = False
+DEBUG = True
 
 from rich.console import Console
 console = Console()
@@ -22,15 +22,16 @@ def crumb(crumbs: List[Task], title: str = '') -> None:
     :param title: The title of the crumb group.
     """
     to_print = list()
+    if (title):
+        if (SIMPLE):
+            print(f"[{title}]")
+        else:
+            console.rule(title)
     for c in crumbs:
         if (SIMPLE):
-            if (title):
-                print(f"[{title}]")
             print(str(c.description))
         else:
-            tmp = Panel.fit(str(c.description))
-            if (title):
-                console.rule(title)
+            tmp = Panel(str(c.description))
             console.print(tmp)
 
 def debug(text: Any) -> None:

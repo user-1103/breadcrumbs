@@ -3,9 +3,9 @@ The default commands that are available.
 """
 from datetime import datetime, timedelta
 from pytodotxt import TodoTxt, Task
-from breadcrumbs.display import crumb
+from breadcrumbs.display import crumb, console
 from re import search, I
-from itertools import filterfalse
+from itertools import dropwhile, filterfalse
 
 def _add(loaf: object, text: str) -> None:
     """
@@ -18,6 +18,13 @@ def _add(loaf: object, text: str) -> None:
     loaf.crumbs.add(tmp)
     loaf.crumbs.save(safe=True)
     crumb([tmp])
+
+def _nop(loaf: object) -> None:
+    """
+    Do nothing.
+
+    :param loaf: The loaf being edited.
+    """
 
 def _archive(loaf: object, crumb_id: str) -> None:
     """
@@ -44,7 +51,6 @@ def _search(loaf: object, search_str: str) -> None:
     """
     _reg(loaf, f".*{search_str}.*")
 
-
 def _reg(loaf: object, search_str: str) -> None:
     """
     Searches the loaf for a given query WITH regex!
@@ -53,8 +59,9 @@ def _reg(loaf: object, search_str: str) -> None:
     :param search_str: the query.
     """
     tmp = \
-        lambda x : search("{search_str}", str(x), I)
+        lambda x : not bool(search(search_str, str(x), I))
     res = list(filterfalse(tmp, loaf.crumbs.tasks))
+    breakpoint()
     crumb(res, "SEARCH")
 
 def _list(loaf: object, count: str = "") -> None:
@@ -69,8 +76,20 @@ def _list(loaf: object, count: str = "") -> None:
         res = loaf.breadcrumbs.tasks[(-1 * count):-1]
         crumb(res, f"{count_int} CRUMBS")
     except Exception as e:
-        tmp = \
-            lambda x : (x.creation_date >= (datetime.now() - timedelta(days=1)))
-        res = list(filterfalse(tmp, loaf.crumbs.tasks))
+        def day_parse(x: Task) -> bool:
+            tmp = x.creation_date
+            if (tmp is None):
+                tmp = datetime.now()
+            ret = (tmp <= (datetime.now() - timedelta(days=1)))
+            return ret
+        res = list(filterfalse(day_parse, loaf.crumbs.tasks))
+        console.clear()
         crumb(res, "24hr OF CRUMBS")
 
+def _debug(loaf: object) -> None:
+    """
+    Show data view.
+
+    :param loaf: The loaf being edited.
+    """
+    breakpoint()
