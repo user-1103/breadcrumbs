@@ -37,6 +37,8 @@ def _check_future(loaf: object) -> None:
     """
     def filter(x: Task) -> bool:
         tmp = x.attributes
+        if (x.is_completed):
+            return True
         if (tmp is None):
             return True
         date_txt = tmp.get("FUTURE", None)

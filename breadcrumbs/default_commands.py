@@ -19,10 +19,10 @@ def _add(loaf: object, text: str) -> None:
     :param text: the text of the file in todo.txt format.
     """
     tmp = Task(text)
-    time = datetime.now().date()
+    time = datetime.now()
     tmp_time = time.time().isoformat("minutes")
     tmp.add_attribute("TIME", tmp_time.replace(":","-"))
-    tmp.creation_date= time
+    tmp.creation_date = time.date()
     loaf.crumbs.add(tmp)
     loaf.crumbs.save(safe=True)
     crumb([tmp])
