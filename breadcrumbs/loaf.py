@@ -23,6 +23,8 @@ class Loaf():
     config_data: Dict[str, Any]
     # The crumbs
     crumbs: TodoTxt = None
+    # space for undo actions.
+    _crumbs: TodoTxt = None
 
     def __post_init__(self) -> None:
         self.crumbs = TodoTxt(Path(self.config_data["loaf"]))

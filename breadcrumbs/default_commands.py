@@ -4,12 +4,14 @@ The default commands that are available.
 from datetime import datetime, timedelta
 from time import time
 from pytodotxt import TodoTxt, Task
-from breadcrumbs.display import crumb, console, info, clear, figure
-from breadcrumbs.default_hooks import _check_future
+from breadcrumbs.display import crumb, console, info, clear, figure, rule
+from breadcrumbs.default_hooks import _check_future_inline
 from re import search, I
 from itertools import dropwhile, filterfalse
 from rich.table import Table
 from hashlib import md5
+
+from breadcrumbs.utils import add_task, archive, loaf_search, save, unarchive, undo
 
 def _add(loaf: object, text: str) -> None:
     """
@@ -18,14 +20,11 @@ def _add(loaf: object, text: str) -> None:
     :param loaf: The loaf being edited.
     :param text: the text of the file in todo.txt format.
     """
-    tmp = Task(text)
-    time = datetime.now()
-    tmp_time = time.time().isoformat("minutes")
-    tmp.add_attribute("TIME", tmp_time.replace(":","-"))
-    tmp.creation_date = time.date()
-    loaf.crumbs.add(tmp)
-    loaf.crumbs.save(safe=True)
-    crumb([tmp])
+    add_task(loaf, text)
+    save(loaf)
+    res = loaf_search(loaf, time_str="1d-~")
+    clear()
+    crumb(res, "BEADCRUMB TRAIL")
 
 def _nop(loaf: object) -> None:
     """
@@ -41,7 +40,7 @@ def _show_future(loaf: object) -> None:
 
     :param loaf: The loaf being edited.
     """
-    _check_future(loaf)
+    _check_future_inline(loaf)
 
 def _help(loaf: object) -> None:
     """
@@ -49,6 +48,8 @@ def _help(loaf: object) -> None:
 
     :param loaf: The loaf being edited.
     """
+    clear()
+    rule("HELP")
     t = Table(title="Crumb Commands.", expand=True)
     t.add_column("Regex Of What You Type...")
     t.add_column("What Happens...")
@@ -66,14 +67,11 @@ def _archive(loaf: object, crumb_id: str) -> None:
     :param loaf: The loaf being edited.
     :param crumb_id: the id of the crumb.
     """
-    tmp = \
-        lambda x : ((not bool(search(crumb_id, str(x)))) or bool(x.is_completed))
-    res = list(filterfalse(tmp, loaf.crumbs.tasks))
+    res = loaf_search(loaf, regex_str=crumb_id)
+    archive(res)
+    save(loaf)
+    clear()
     crumb(res, "ARCHIVED")
-    for c in res:
-        c.is_completed = True
-        c.completion_date = datetime.now()
-    loaf.crumbs.save(safe=True)
     info(f"Archived {len(res)} crumbs.")
 
 def _unarchive(loaf: object, crumb_id: str) -> None:
@@ -83,35 +81,22 @@ def _unarchive(loaf: object, crumb_id: str) -> None:
     :param loaf: The loaf being edited.
     :param crumb_id: the id of the crumb.
     """
-    tmp = \
-        lambda x : ((not bool(search(crumb_id, str(x)))) or (not bool(x.is_completed)))
-    res = list(filterfalse(tmp, loaf.crumbs.tasks))
+    res = loaf_search(loaf, regex_str=crumb_id)
+    unarchive(res)
+    save(loaf)
+    clear()
     crumb(res, "UN-ARCHIVED")
-    for c in res:
-        c.is_completed = False
-        c.completion_date = None
-    loaf.crumbs.save(safe=True)
     info(f"Un-Archived {len(res)} crumbs.")
 
 def _search(loaf: object, search_str: str) -> None:
-    """
-    Searches (fuzzy, kinda) the loaf for a given query.
-
-    :param loaf: The loaf being edited.
-    :param search_str: the query.
-    """
-    _reg(loaf, f".*{search_str}.*")
-
-def _reg(loaf: object, search_str: str) -> None:
     """
     Searches the loaf for a given query WITH regex!
 
     :param loaf: The loaf being edited.
     :param search_str: the query.
     """
-    tmp = \
-        lambda x : not bool(search(search_str, str(x), I))
-    res = list(filterfalse(tmp, loaf.crumbs.tasks))
+    loaf_search(loaf, regex_str=search_str)
+    clear()
     crumb(res, "SEARCH")
 
 def _list(loaf: object, count: str = "") -> None:
@@ -126,16 +111,9 @@ def _list(loaf: object, count: str = "") -> None:
         res = loaf.breadcrumbs.tasks[(-1 * count):-1]
         crumb(res, f"{count_int} CRUMBS")
     except Exception as e:
-        def day_parse(x: Task) -> bool:
-            tmp = x.creation_date
-            if (tmp is None):
-                tmp = datetime.now().date()
-            ret = (tmp <= (datetime.now() - timedelta(days=1)).date())
-            ret = (ret or bool(x.is_completed))
-            return ret
-        res = list(filterfalse(day_parse, loaf.crumbs.tasks))
+        res = loaf_search(loaf, time_str="1d-~")
         clear()
-        crumb(res, "24hr OF CRUMBS")
+        crumb(res, "BEADCRUMB TRAIL")
 
 def _debug(loaf: object) -> None:
     """
@@ -143,4 +121,17 @@ def _debug(loaf: object) -> None:
 
     :param loaf: The loaf being edited.
     """
+    clear()
+    rule("DEBUG MODE")
     breakpoint()
+
+def _undo(loaf: object) -> None:
+    """
+    Undo a save.
+
+    :param loaf: The loaf being edited.
+    """
+    clear()
+    rule("UNDO")
+    undo(loaf)
+    info("Undo successful...")

@@ -18,6 +18,14 @@ lex = TodotxtLexer()
 from rich.console import Console, RenderableType
 console = Console()
 
+def rule(text: str) -> None:
+    """
+    Print a lined rule with a tile.
+
+    :param tex: title to center.
+    """
+    console.rule(text)
+
 def easy_lex(text: Any) -> Syntax:
     """
     Wrap text in a syntax block.

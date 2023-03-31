@@ -9,8 +9,10 @@ from pytodotxt import Task
 from rich.table import Table
 from re import search
 from itertools import filterfalse
-from breadcrumbs.display import easy_lex, figure
+from breadcrumbs.display import clear, crumb, easy_lex, figure
 import time
+
+from breadcrumbs.utils import loaf_search, order_by_date
 
 # Tracks the money in an account
 PAY: Dict[str, List[float]] = dict()
@@ -29,33 +31,22 @@ def _check_time(loaf: object) -> None:
         return
     else:
         LAST_FUTURE = time.time()
-    _check_future(loaf)
+    _check_future_inline(loaf)
 
-def _check_future(loaf: object) -> None:
+
+def _check_future_inline(loaf: object) -> None:
     """
     Checks to see if there are any tasks cast to now.
     """
+    res = loaf_search(loaf, time_str="1d-~")
     def filter(x: Task) -> bool:
-        tmp = x.attributes
-        if (x.is_completed):
-            return True
+        tmp = x.attributes.get("FUTURE", None)
         if (tmp is None):
             return True
-        date_txt = tmp.get("FUTURE", None)
-        if (date_txt is None):
-            return True
-        date_txt = date_txt[0]
-        tmp_date = date.fromisoformat(date_txt)
-        if (date.today() >= tmp_date):
-            return False
         else:
-            return True
-    def sort_method(x: Task) -> Tuple[int]:
-        date_txt = x.attributes["FUTURE"][0]
-        tmp = tuple(date_txt.split("-"))
-        return tmp
+            return False
     res = list(filterfalse(filter, loaf.crumbs.tasks))
-    res.sort(key=sort_method)
+    order_by_date(res, "FUTURE")
     if (not res):
         return
     t = Table(title=f"Future Casts For {date.today().isoformat()}",
@@ -70,4 +61,18 @@ def _check_future(loaf: object) -> None:
         t.add_row(date_txt[0], easy_lex(des))
     figure([t])
 
-
+def _check_future_list(loaf: object) -> None:
+    """
+    Prints future casted items as a list.
+    """
+    res = loaf_search(loaf, time_str="1d-~")
+    def filter(x: Task) -> bool:
+        tmp = x.attributes.get("FUTURE", None)
+        if (tmp is None):
+            return True
+        else:
+            return False
+    res = list(filterfalse(filter, loaf.crumbs.tasks))
+    order_by_date(res, "FUTURE")
+    clear()
+    crumb(res, f"FUTURE CASTS FOR {datetime.now().isoformat(timespec='minutes')}")
