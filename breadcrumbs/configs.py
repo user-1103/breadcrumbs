@@ -65,7 +65,6 @@ DEFAULT_CONFIG = {
     },
     "cmds": {
         r"^\?help": dc._help,
-        r"^\?r (.*)": dc._reg,
         r"^\?f": dc._show_future,
         r"^\?d": dc._debug,
         r"^\?s (.*)": dc._search,

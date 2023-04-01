@@ -10,7 +10,8 @@ from typing import List, Union, Tuple
 from copy import deepcopy
 
 from pytodotxt import Task
-from breadcrumbs.loaf import Loaf
+
+from breadcrumbs.display import debug
 
 def time_str_to_delta(ts: str) -> timedelta:
     """
@@ -44,12 +45,14 @@ def task_to_make_date(t: Task) -> datetime:
     :param t: the task to process.
     :retrun: a new datetime object.
     """
-    T = t.attributes.get("TIME", None)[0]
+    T = t.attributes.get("TIME", [None])[0]
+    if (T is None):
+        T = "01-01"
     D = t.creation_date
-    if ((T is None) or (D is None)):
-        raise Exception("The required args are not found")
+    if (D is None):
+        D = datetime.fromisoformat("1970-01-01")
     h, m = T.split("-")
-    ret = datetime.combine(D, time(hour=h, minute=m))
+    ret = datetime.combine(D, time(hour=int(h), minute=int(m)))
     return ret
 
 def task_to_archive_date(t: Task) -> datetime:
@@ -59,12 +62,14 @@ def task_to_archive_date(t: Task) -> datetime:
     :param t: the task to process.
     :retrun: a new datetime object.
     """
-    T = t.attributes.get("ATIME", None)[0]
+    T = t.attributes.get("ATIME", [None])[0]
+    if (T is None):
+        T = "01-01"
     D = t.completion_date
-    if ((T is None) or (D is None)):
-        raise Exception("The required args are not found")
+    if (D is None):
+        D = datetime.fromisoformat("1970-01-01")
     h, m = T.split("-")
-    ret = datetime.combine(D, time(hour=h, minute=m))
+    ret = datetime.combine(D, time(hour=int(h), minute=int(m)))
     return ret
 
 def parse_date_range(dr: str) -> Tuple[datetime, datetime]:
@@ -104,20 +109,20 @@ def order_by_date(task_list: List[Task],
     :param key: An optional key, that when provided will be used as the source
     of the date. Otherwise the date used is the creation_date.
     """
-    def sort_method(x: Task) -> Tuple[int, int, int]:
+    def sort_method(x: Task) -> Union[Tuple[int, int, int], Tuple[int, int, int, int, int]]:
         if (key is None):
-            date_txt = task_to_archive_date(x).timetuple()
+            date_txt = task_to_make_date(x).timetuple()
             tmp = tuple(date_txt)
             return tmp
         else:
-            date_txt = x.attributes.get(key, ["1970-1-1"])[0]
+            date_txt = x.attributes.get(key, ["1970-01-01"])[0]
             tmp = tuple(date_txt.split("-"))
             tmp_2 = (int(tmp[0]), int(tmp[1]), int(tmp[2]))
             return tmp_2
     task_list.sort(key=sort_method)
 
 
-def loaf_search(loaf: Loaf,
+def loaf_search(loaf: 'Loaf',
                 regex_str: Union[str,None] = None,
                 raw_text: bool = False,
                 archived: Union[bool, None] = None,
@@ -151,9 +156,15 @@ def loaf_search(loaf: Loaf,
             tex = str(x)
         else:
             tex = x.description
+        if (tex is None):
+            debug("No Description")
+            debug(x)
+            return True
         reg = search(regex_str, tex)
-        ret = not bool(reg)
-        return ret
+        if (reg is None):
+            return True
+        else:
+            return False
 
     def filter_archive(x: Task) -> bool:
         nonlocal archived
@@ -202,6 +213,8 @@ def loaf_search(loaf: Loaf,
         res = list(filterfalse(filter_archive_time_str, res))
     if (regex_str is not None):
         res = list(filterfalse(filter_regex, res))
+    debug("Post Filter")
+    debug(res)
     return res
 
 def archive(task_list: List[Task]) -> None:
@@ -226,7 +239,7 @@ def unarchive(task_list: List[Task]) -> None:
         task.remove_attribute("ATIME")
         task.is_completed = False
 
-def add_task(loaf: Loaf, task: str) -> None:
+def add_task(loaf: 'Loaf', task: str) -> None:
     """
     Adds a task in the right way!.
 
@@ -234,12 +247,13 @@ def add_task(loaf: Loaf, task: str) -> None:
     :param task: The TodoTxt task text.
     """
     dt = datetime.now().time().isoformat("minutes")
-    dt.replace(":", "-")
+    dt = dt.replace(":", "-")
     tmp = Task(task)
     tmp.add_attribute("TIME", dt)
+    loaf.crumbs.add(tmp)
     tmp.creation_date = datetime.now()
 
-def save(loaf: Loaf) -> None:
+def save(loaf: 'Loaf') -> None:
     """
     Saves the loaf in an undooable way.
 
@@ -247,10 +261,10 @@ def save(loaf: Loaf) -> None:
     """
     loaf._crumbs = deepcopy(loaf.crumbs)
     loaf._crumbs.save(Path("./.loaf.bac"))
-    order_by_date(loaf.crumbs)
+    order_by_date(loaf.crumbs.tasks)
     loaf.crumbs.save(safe=True)
 
-def undo(loaf: Loaf) -> None:
+def undo(loaf: 'Loaf') -> None:
     """
     Undo the last save action.
 

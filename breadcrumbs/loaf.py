@@ -13,6 +13,7 @@ from itertools import filterfalse
 from enum import Enum, auto
 from functools import wraps
 from breadcrumbs.configs import HookTypes, load_config
+from breadcrumbs.utils import loaf_search, order_by_date, save
 
 @dataclass
 class Loaf():
@@ -22,36 +23,17 @@ class Loaf():
     # Config from the config file
     config_data: Dict[str, Any]
     # The crumbs
-    crumbs: TodoTxt = None
+    crumbs: Union[TodoTxt, None] = None
     # space for undo actions.
-    _crumbs: TodoTxt = None
+    _crumbs: Union[TodoTxt, None] = None
 
     def __post_init__(self) -> None:
         self.crumbs = TodoTxt(Path(self.config_data["loaf"]))
         self.crumbs.parse()
-        def sort_days(x: Task) -> Tuple[int, int, int, int, int]:
-            day = x.creation_date
-            day_tup = tuple()
-            if (day is None):
-                day_tup = (1970, 1, 2)
-            else:
-                day_tup = day.timetuple()
-            time_txt = x.attributes.get("TIME", ["01-01"])[0]
-            time_list = time_txt.split("-")
-            time_tup = (*day_tup, int(time_list[0]), int(time_list[1]))
-            return time_tup
-        self.crumbs.tasks.sort(key=sort_days)
-        self.crumbs.save()
-        def day_parse(x: Task) -> bool:
-            tmp = x.creation_date
-            if (tmp is None):
-                tmp = datetime.now().date()
-            ret = (tmp <= (datetime.now() - timedelta(days=1)).date())
-            ret = (ret or bool(x.is_completed))
-            return ret
-        res = list(filterfalse(day_parse, self.crumbs.tasks))
+        if (self.crumbs.tasks is not None):
+            save(self)
+        res = loaf_search(self, time_str="1d-~")
         clear()
-        crumb(res, "24hr OF CRUMBS")
 
 def expand_macros(user_input: str) -> str:
     """

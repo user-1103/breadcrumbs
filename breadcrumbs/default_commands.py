@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from time import time
 from pytodotxt import TodoTxt, Task
 from breadcrumbs.display import crumb, console, info, clear, figure, rule
-from breadcrumbs.default_hooks import _check_future_inline
+from breadcrumbs.default_hooks import _check_future_list
 from re import search, I
 from itertools import dropwhile, filterfalse
 from rich.table import Table
@@ -22,7 +22,7 @@ def _add(loaf: object, text: str) -> None:
     """
     add_task(loaf, text)
     save(loaf)
-    res = loaf_search(loaf, time_str="1d-~")
+    res = loaf_search(loaf, time_str="1d-~", archived=False)
     clear()
     crumb(res, "BEADCRUMB TRAIL")
 
@@ -40,7 +40,7 @@ def _show_future(loaf: object) -> None:
 
     :param loaf: The loaf being edited.
     """
-    _check_future_inline(loaf)
+    _check_future_list(loaf)
 
 def _help(loaf: object) -> None:
     """
@@ -95,7 +95,7 @@ def _search(loaf: object, search_str: str) -> None:
     :param loaf: The loaf being edited.
     :param search_str: the query.
     """
-    loaf_search(loaf, regex_str=search_str)
+    res = loaf_search(loaf, regex_str=search_str)
     clear()
     crumb(res, "SEARCH")
 
@@ -107,11 +107,12 @@ def _list(loaf: object, count: str = "") -> None:
     :param count: Count of crumbs to show.
     """
     try:
+        #TODO Shou,d probably remove this branch
         count_int = int(count)
         res = loaf.breadcrumbs.tasks[(-1 * count):-1]
         crumb(res, f"{count_int} CRUMBS")
     except Exception as e:
-        res = loaf_search(loaf, time_str="1d-~")
+        res = loaf_search(loaf, time_str="1d-~", archived=False)
         clear()
         crumb(res, "BEADCRUMB TRAIL")
 

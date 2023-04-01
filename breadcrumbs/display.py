@@ -8,12 +8,16 @@ from rich.panel import Panel
 from pytodotxt import Task
 from rich.syntax import Syntax
 from breadcrumbs.lexer import TodotxtLexer
+import readline
 # Wether to print in a undecorated form
 SIMPLE = False
 # To print debug info
 DEBUG = False
 # The todo lexer to Use
 lex = TodotxtLexer()
+
+# readline.parse_and_bind('tab: complete')
+# readline.parse_and_bind('set editing-mode vi')
 
 from rich.console import Console, RenderableType
 console = Console()
@@ -103,6 +107,8 @@ def err(e: Exception) -> None:
     :param e: The recoverable err.
     """
     console.log(e)
+    if (DEBUG):
+        console.print_exception()
 
 def info(text: str)  -> None:
     """
