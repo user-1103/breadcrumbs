@@ -11,6 +11,8 @@ from rich.console import RenderableType
 from rich.table import Table
 from re import search
 from itertools import filterfalse, pairwise
+
+from rich.text import Text
 from breadcrumbs.display import clear, crumb, easy_lex, err, figure, info
 import time
 import plotext as pt
@@ -24,6 +26,10 @@ PAY: Dict[str, List[float]] = dict()
 FUTURE_WAIT = (60 * 30)
 # Stops the spaming of future figs
 LAST_FUTURE = time.time() - FUTURE_WAIT
+# Tracks the metrics
+METRICS_CACHE = dict()
+# Has metris run once
+METRICS_FIRST_RUN = True
 
 def _check_time(loaf: object) -> None:
     """
@@ -64,11 +70,30 @@ def _check_future_inline(loaf: object) -> None:
         t.add_row(date_txt[0], easy_lex(des))
     figure([t])
 
+def _collect_metrics_cmd(loaf: 'Loaf') -> None:
+    """
+    Finds all metrics in the loaf that need to be printed inline and prints them.
+    """
+    _collect_metrics(loaf, True)
+
 def _collect_metrics_inline(loaf: 'Loaf') -> None:
     """
     Finds all metrics in the loaf that need to be printed inline and prints them.
     """
+    global METRICS_FIRST_RUN
+    if (METRICS_FIRST_RUN):
+        _collect_metrics(loaf, True, False)
+        METRICS_FIRST_RUN = False
+    else:
+        _collect_metrics(loaf)
+
+def _collect_metrics(loaf: 'Loaf', cmd: bool = False, do_print: bool = True) -> None:
+    """
+    Finds all metrics in the loaf that need to be printed inline and prints them.
+    """
     print_data = list()
+    if (cmd):
+        METRICS_CACHE.clear()
     for c in loaf.config_data.get("metrics", list()):
         try:
             tmp = c[0](loaf, c[1])
@@ -79,12 +104,14 @@ def _collect_metrics_inline(loaf: 'Loaf') -> None:
             continue
         else:
             print_data.extend(tmp)
-    if (print_data):
-        figure(print_data)
+    if (print_data and do_print):
+        if (not cmd):
+            figure(print_data)
+        else:
+            clear()
+            figure(print_data, "METRICS")
 
-METRICS_CACHE = dict()
-
-def _span(loaf, tag: str) -> Union[List[str], None]:
+def _span(loaf, tag: str) -> Union[List[RenderableType], None]:
     """
     Represents a metric that takes place a cross a span of time.
     """
@@ -96,22 +123,24 @@ def _span(loaf, tag: str) -> Union[List[str], None]:
         if (m is None):
             continue
         tmp.append((m.groups()[0], task_to_make_date(x)))
-    if (tmp is METRICS_CACHE.get(tag, list())):
+    if (tmp == METRICS_CACHE.get(tag, list())):
         return None
     else:
         METRICS_CACHE[tag] = tmp
     time_spans = _get_time_spans(tmp)
+    if (not time_spans):
+        return None
     s1 = [x[0] for x in time_spans]
     if (len(s1) > 24):
         s1 = s1[:23]
     ret = list()
     ret.append(_print_time_table(time_spans))
     cat_data = [(x, ((z-y).seconds)/60) for x, y, z in time_spans]
-    ret.append(_print_cat_ratio(cat_data, f"Heatmap of {tag}"))
-    ret.append(_print_span(s1))
+    ret.append(_print_cat_ratio(cat_data, f"Breakdown of {tag}", "Minutes", "Category"))
+    # ret.append(_print_span(s1))
     return ret
 
-def _run_total(loaf, tag: str, time_limit: int = 40) -> Union[List[str], None]:
+def _run_total(loaf, tag: str, time_limit: int = 40) -> Union[List[RenderableType], None]:
     """
     Represents a metric that is a running total.
     """
@@ -119,17 +148,17 @@ def _run_total(loaf, tag: str, time_limit: int = 40) -> Union[List[str], None]:
                       regex_str=(tag + r':\w*'))
     tmp = list()
     for x in rec:
-        m = search((tag + r':(\w*)/(\w*)'), x.description)
+        m = search((tag + r':(\S*)/(\S*)'), x.description)
         if (m is None):
             continue
         tmp.append((float(m.groups()[0]), m.groups()[1], task_to_make_date(x)))
-    if (tmp is METRICS_CACHE.get(tag, list())):
+    if (tmp == METRICS_CACHE.get(tag, list())):
         return None
     else:
         METRICS_CACHE[tag] = tmp
     ret = list()
     cat_data = [(y, x) for x, y, z in tmp]
-    ret.append(_print_cat_ratio(cat_data, f"Heatmap of {tag} (All Time)"))
+    ret.append(_print_cat_ratio(cat_data, f"Heatmap of {tag} (All Time)", "Effect", "Source"))
     run_data = [(z, x) for x, y, z in tmp]
     ret.append(_print_running_total(run_data, time_limit, "Time", "Net Total",
                                     f"Net Change Over Time of {tag}"))
@@ -143,17 +172,17 @@ def _total_table(loaf, tag: str, time_limit: str = "20d-~") -> Union[List[str], 
                       regex_str=(tag + r':\w*'))
     tmp = list()
     for x in rec:
-        m = search((tag + r':(\w*)'), x.description)
+        m = search((tag + r':(\S*)'), x.description)
         if (m is None):
             continue
         tmp.append((float(m.groups()[0]), task_to_make_date(x)))
-    if (tmp is METRICS_CACHE.get(tag, list())):
+    if (tmp == METRICS_CACHE.get(tag, list())):
         return None
     else:
         METRICS_CACHE[tag] = tmp
     ret = list()
     value_data = [(y, x) for x, y in tmp]
-    ret.append(_print_value_table(value_data, f"Record of {tag} since {time_limit}"))
+    ret.append(_print_value_table(value_data, f"Record of {tag} over {time_limit}"))
     return(ret)
 
 def _print_span(data: List[str], span: int = 24) -> str:
@@ -220,7 +249,9 @@ def _get_time_spans(data: List[Tuple[str, datetime]]) -> List[Tuple[str, datetim
     return ret
 
 def _print_cat_ratio(data: List[Tuple[str, float]],
-                     title: str) -> str:
+                     title: str,
+                     x_text: str,
+                     y_text: str) -> RenderableType:
     """
     Takes a set of values and names to make a simple histogram.
 
@@ -232,16 +263,21 @@ def _print_cat_ratio(data: List[Tuple[str, float]],
         tmp = data_dict.get(name, list())
         tmp.append(value)
         data_dict[name] = tmp
-    data_dict = {k: sum(v) for k, v in data_dict}
-    pt.simple_bar(data_dict.keys(), data_dict.values(),
-                  title=title)
-    return pt.build()
-
+    data_dict = {k: sum(v) for k, v in data_dict.items()}
+    pt.clf()
+    pt.limit_size(True, True)
+    pt.plot_size((pt.tw() // 2), (pt.th() // 3))
+    pt.bar(data_dict.keys(), data_dict.values())
+    t = Table(title=title)
+    ret = Text.from_ansi(pt.build(), overflow="crop", no_wrap=True, justify="left")
+    t.add_column(ret)
+    t.add_row(f"Graph of {x_text} vs {y_text}")
+    return t
 
 def _print_running_total(data: List[Tuple[datetime, float]],
                          time_limit: int,
                          x_text: str, y_text: str,
-                         title: str) -> str:
+                         title: str) -> RenderableType:
     """
     Takes a set of datetimes and generates a running total graph.
 
@@ -260,15 +296,19 @@ def _print_running_total(data: List[Tuple[datetime, float]],
             times.append(pt.datetime_to_string(t))
             values.append(running_total)
 
+    pt.clf()
+    pt.limit_size(True, True)
+    pt.plot_size((pt.tw() // 2), (pt.th() // 3))
     pt.plot(times, values)
-    pt.title(title)
-    pt.xlabel(x_text)
-    pt.ylabel(y_text)
-    return pt.build()
+    t = Table(title=title)
+    ret = Text.from_ansi(pt.build(), overflow="crop", no_wrap=True, justify="left")
+    t.add_column(ret)
+    t.add_row(f"Graph of {x_text} vs {y_text}")
+    return t
 
 
 def _print_value_table(data: List[Tuple[datetime, float]],
-                       title: str) -> RenderableType
+                       title: str) -> RenderableType:
     """
     Takes a set of datetimes and generates a per day table..
 
@@ -294,15 +334,16 @@ def _print_value_table(data: List[Tuple[datetime, float]],
     rows  = list()
     tmp = list()
     for i, v in enumerate(print_data):
-        if (not (i%7)):
+        if ((not (i%7)) and (i != 0)):
             rows.append(tmp)
             tmp = list()
         tmp.append(f"{v[0]}\n{v[1]}")
+    rows.append(tmp)
     t = Table(title=title, show_edge=False)
     for x in range(7):
         t.add_column(str(x), justify="center")
     for r in rows:
-        t.add_row(Align(r, vertical="middle"))
+        t.add_row(Align(*r, vertical="middle"))
     return t
 
 

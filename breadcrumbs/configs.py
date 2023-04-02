@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Dict, Any
 import breadcrumbs.default_commands as dc
 import breadcrumbs.default_hooks as dh
+from os.path import isdir, isfile
+from os import mkdir
 import importlib.util
 import sys
 
@@ -41,7 +43,26 @@ def collect_config(path: Path) -> Dict[str, Any]:
         ret = dict()
     return ret
 
-DEFAULT_PATH = (".breadbox")
+def ensure_breadbox() -> str:
+    """
+    Ensures that a breadbox is present and retruns its location.
+    Will check the current directory and then ~/.breadbox . 
+    If it is not found create a ~/.breadbox with a default.loaf
+
+    :return: The location of the breadbox.
+    """
+    if (isdir("./.breadbox")):
+        if (not isfile("./.breadbox/default.loaf")):
+            Path(".breadbox/default.loaf").touch()
+        return ".breadbox"
+    else:
+        if (not isdir("~/.breadbox")):
+            mkdir("~/.breadbox")
+        if (not isfile("~/.breadbox/default.loaf")):
+            Path("~/.breadbox/default.loaf").touch()
+        return "~./breadbox"
+
+DEFAULT_PATH = ensure_breadbox()
 DEFAULT_CONFIG_PATH = Path(f"{DEFAULT_PATH}/config.py")
 DEFAULT_LOAF_PATH = Path(f"{DEFAULT_PATH}/default.loaf")
 
@@ -54,7 +75,8 @@ DEFAULT_CONFIG = {
         HookTypes.PRE: [
         ],
         HookTypes.POST: [
-            dh._check_time
+            dh._check_time,
+            dh._collect_metrics_inline
         ],
         HookTypes.PREMACRO: [
         ],
@@ -67,6 +89,7 @@ DEFAULT_CONFIG = {
         r"^\?help": dc._help,
         r"^\?f": dc._show_future,
         r"^\?d": dc._debug,
+        r"^\?m": dh._collect_metrics_cmd,
         r"^\?s (.*)": dc._search,
         r"^\?l ?(.*)": dc._list,
         r"^\?a (.*)": dc._archive,
@@ -79,6 +102,11 @@ DEFAULT_CONFIG = {
         r"\.\.f (.*)\.?": r"FUTURE:\1", # Mark for the future
         r"\.\.r (.*)\.?": r"REPEAT:\1" # Repeat str
     },
+    "metrics": [
+        (dh._span, "SPAN"),
+        (dh._run_total, "RT"),
+        (dh._total_table, "TT")
+    ],
     "loaf": DEFAULT_LOAF_PATH,
     "config": DEFAULT_CONFIG_PATH
 }

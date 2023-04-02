@@ -87,7 +87,7 @@ def figure(figures: List[RenderableType], title: str = '') -> None:
         if (SIMPLE):
             console.print(c)
         else:
-            tmp = Panel(c, border_style="blue")
+            tmp = Panel(c, border_style="blue", safe_box=False)
             console.print(tmp)
 
 def debug(text: Any) -> None:
