@@ -1,30 +1,18 @@
 """
 Module for loading in the loaf config.
 """
-
 from enum import Enum, auto
 from pathlib import Path
 from typing import Dict, Any
-import breadcrumbs.default_commands as dc
-import breadcrumbs.default_hooks as dh
+import breadcrumbs.commands as dc
+import breadcrumbs.hooks as dh
+from breadcrumbs.hooks import HookTypes
 from os.path import isdir, isfile
 from os import mkdir
 import importlib.util
 import sys
 
 from breadcrumbs.display import debug
-
-class HookTypes(Enum):
-    """
-    The types of hooks that can be hooked.
-    """
-    INIT = auto()
-    EXIT = auto()
-    PREMACRO = auto()
-    PRE = auto()
-    POST = auto()
-    OK = auto()
-    ERR = auto()
 
 def collect_config(path: Path) -> Dict[str, Any]:
     """
@@ -75,8 +63,8 @@ DEFAULT_CONFIG = {
         HookTypes.PRE: [
         ],
         HookTypes.POST: [
-            dh._check_time,
-            dh._collect_metrics_inline
+            dh.call_hooks,
+            dh.collect_metrics_hook
         ],
         HookTypes.PREMACRO: [
         ],
@@ -86,26 +74,45 @@ DEFAULT_CONFIG = {
         ]
     },
     "cmds": {
-        r"^\?help": dc._help,
-        r"^\?f": dc._show_future,
-        r"^\?d": dc._debug,
-        r"^\?m": dh._collect_metrics_cmd,
-        r"^\?s (.*)": dc._search,
-        r"^\?l ?(.*)": dc._list,
-        r"^\?a (.*)": dc._archive,
-        r"^\?A (.*)": dc._unarchive,
-        r"^\?.*": dc._nop,
-        r"^(.*)": dc._add
+        r"^\?help": dc.help_cmd,
+        r"^\?debug": dc.debug_cmd,
+        r"^\?l ?(.*)": dc.list_cmd,
+        r"^\?f": dc.check_future_cmd,
+        r"^\?m": dc.collect_metrics_cmd,
+        r"^\?s (.*)": dc.search_cmd,
+        r"^\?a (.*)": dc.archive_cmd,
+        r"^\?A (.*)": dc.unarchive_cmd,
+        r"^\?.*": dc.nop_cmd,
+        r"^(.*)": dc.add_cmd
     },
     "macros": {
-        r"\.\.s (.*)\.?": r"TRACK:\1", # start a tracking session
+        r"\.\.t (.*)\.?": r"TRACK:\1", # start a tracking session
+        r"\.\.m (.*)\.?": r"MOOD:\1", # start a tracking session
         r"\.\.f (.*)\.?": r"FUTURE:\1", # Mark for the future
-        r"\.\.r (.*)\.?": r"REPEAT:\1" # Repeat str
+        r"\.\.n (.*)\.?": r"\1:1", # Genaric metric note
+        r"\.\.c (.*)\s(.*)\.?": r"COST:\1/\2" # Cost str
     },
     "metrics": [
-        (dh._span, "SPAN"),
-        (dh._run_total, "RT"),
-        (dh._total_table, "TT")
+        (dh.span, "TRACK"),
+        (dh.span, "MOOD"),
+        (dh.run_total, "COST"),
+        (dh.total_table, "brush"),
+        (dh.total_table, "teeth"),
+        (dh.total_table, "mwash"),
+        (dh.total_table, "shavef"),
+        (dh.total_table, "shaveb"),
+        (dh.total_table, "showere"),
+        (dh.total_table, "showern"),
+        (dh.total_table, "vit"),
+        (dh.total_table, "zol"),
+        (dh.total_table, "thy"),
+        (dh.total_table, "laundry"),
+        (dh.total_table, "sclean"),
+        (dh.total_table, "fclean"),
+        (dh.total_table, "exe"),
+        (dh.total_table, "stretch"),
+        (dh.total_table, "wake"),
+        (dh.total_table, "sleep")
     ],
     "loaf": DEFAULT_LOAF_PATH,
     "config": DEFAULT_CONFIG_PATH

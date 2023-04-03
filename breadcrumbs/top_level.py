@@ -1,29 +1,27 @@
 """
 Module that orchestrates the other modules.
 """
-
-from argparse import ArgumentParser
-from breadcrumbs.configs import HookTypes, load_config
+from argparse import ArgumentParser, Namespace
+from breadcrumbs.hooks import HookTypes, call_hooks
 from signal import SIGINT, signal
 from sys import exit
 
-from breadcrumbs.display import SIMPLE, DEBUG, info, prompt
-from breadcrumbs.loaf import Loaf, call_hooks, parse
+from breadcrumbs.display import SIMPLE, DEBUG, clear, debug, info, prompt
+from breadcrumbs.loaf import Loaf, init_loaf, parse
 
 def on_exit(signum, stack) -> None:
     """
-    Calls the redigested EXIT hooks on kill signal
+    Calls the redigested EXIT hooks on kill signal.
     """
     info(" Mañana")
     call_hooks(HookTypes.EXIT)
     exit(0)
 
-
-signal(SIGINT, on_exit)
-
-def run() -> None:
+def parse_cli_args() -> Namespace:
     """
-    Loads a loaf, and allows the user to modify it.
+    Parses the CLI arguments and returns a namespace of args.
+
+    :returns: The parsed args.
     """
     parser = ArgumentParser(
                     prog='bc',
@@ -41,6 +39,17 @@ def run() -> None:
                         default="",
                         help='The crumb command to run.')
     args = parser.parse_args()
+    return args
+
+def run() -> None:
+    """
+    Loads a loaf in a cli, and allows the user to modify it.
+    """
+    signal(SIGINT, on_exit)
+    args = parse_cli_args()
+    init_loaf()
+    debug("Parsed args, loaded Loaf, and registered signals.")
+    # TODO should these be moved into the loaf config?
     if (args.simple):
         SIMPLE = True
     if (args.debug):
@@ -54,9 +63,8 @@ def run() -> None:
 def repl() -> None:
     """
     Runs a repl to manage the crumbs.
-
-    :params loaf: The loaf to edit in the repl.
     """
+    clear()
     while True:
         tmp = prompt()
         parse(tmp)

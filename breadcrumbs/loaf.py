@@ -1,5 +1,5 @@
 """
-Contains Loaf based stuff.
+Contains basic Loaf based stuff.
 """
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,13 +12,19 @@ from datetime import datetime, timedelta
 from itertools import filterfalse
 from enum import Enum, auto
 from functools import wraps
-from breadcrumbs.configs import HookTypes, load_config
+from breadcrumbs.configs import DEFAULT_CONFIG_PATH, collect_config, load_config
 from breadcrumbs.utils import loaf_search, order_by_date, save
+from hooks import call_hooks, HookTypes
+
+# The global config state
+CONFIG: Union[None, Dict[str, Any]] = None
+# The current load being managed
+LOAF: Union[None, 'Loaf'] = None
 
 @dataclass
 class Loaf():
     """
-    Represents the entire log system as it is modified by the tool.
+    Represents a collection of crumbs.
     """
     # Config from the config file
     config_data: Dict[str, Any]
@@ -28,16 +34,17 @@ class Loaf():
     _crumbs: Union[TodoTxt, None] = None
 
     def __post_init__(self) -> None:
+        """
+        Actually loads in a loaf from disk form the config path.
+        """
         self.crumbs = TodoTxt(Path(self.config_data["loaf"]))
         self.crumbs.parse()
         if (self.crumbs.tasks is not None):
             save(self)
-        res = loaf_search(self, time_str="1d-~")
-        clear()
 
 def expand_macros(user_input: str) -> str:
     """
-    Expand macros in the input text.
+    Expands macros in the input text.
 
     :param user_input: The unprocessed user input.
     :return: The user_input with expanded macros.
@@ -56,7 +63,7 @@ def parse(user_input: str) -> None:
     """
     if (not user_input):
         return
-    debug("STAGE 0:")
+    debug("STAGE 0 (RAW TEXT):")
     debug(user_input)
     LOAF.config_data.update({"current_cmd": user_input})
     call_hooks(HookTypes.PREMACRO)
@@ -86,25 +93,19 @@ def parse(user_input: str) -> None:
         else:
             raise Exception("Could not find a way to parse this :(")
     except Exception as e:
+        LOAF.config_data.update({"cmd_err_obj": e})
         call_hooks(HookTypes.ERR)
         err(e)
     else:
         call_hooks(HookTypes.OK)
     call_hooks(HookTypes.POST)
 
-def call_hooks(hook: HookTypes) -> None:
+def init_loaf() -> None:
     """
-    Calls all hooks registered with a given name.
-
-    :args hook: The type of the hook in it.
+    Sets up the global LOAF and CONFIG vars so they may be used.
+    MUST BE CALLED BEFORE LOAF USAGE!
     """
-    h = LOAF.config_data["hooks"].get(hook, None)
-    if (not h):
-        return
-    debug(f"Calling internal hook {hook}")
-    for hook_call in h:
-        debug(f"Calling {hook_call.__name__}")
-        hook_call(LOAF)
-
-CONFIG = load_config()
-LOAF = Loaf(config_data=CONFIG)
+    global LOAF, CONFIG
+    CONFIG = collect_config(DEFAULT_CONFIG_PATH)
+    LOAF = Loaf(config_data=CONFIG)
+    debug(f"Loaded Loaf {LOAF}.")

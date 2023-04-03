@@ -5,19 +5,41 @@ from datetime import datetime, timedelta
 from time import time
 from pytodotxt import TodoTxt, Task
 from breadcrumbs.display import crumb, console, info, clear, figure, rule
-from breadcrumbs.default_hooks import _check_future_list
 from re import search, I
 from itertools import dropwhile, filterfalse
 from rich.table import Table
 from hashlib import md5
+from breadcrumbs.utils import add_task, archive, loaf_search, save, unarchive, undo, order_by_date
+from breadcrumbs.hooks import collect_metrics
 
-from breadcrumbs.utils import add_task, archive, loaf_search, save, unarchive, undo
-
-def _add(loaf: object, text: str) -> None:
+def check_future_cmd(loaf: object) -> None:
     """
-    Adds a crumb to the loaf.
+    (CMD) Prints future casted items as a list.
+    """
+    res = loaf_search(loaf, time_str="1d-~")
+    def filter(x: Task) -> bool:
+        tmp = x.attributes.get("FUTURE", None)
+        if (tmp is None):
+            return True
+        else:
+            return False
+    res = list(filterfalse(filter, loaf.crumbs.tasks))
+    order_by_date(res, "FUTURE")
+    clear()
+    crumb(res, f"FUTURE CASTS FOR {datetime.now().isoformat(' ', 'minutes')}")
+    if (not res):
+        info("No casts to now...")
 
-    :param loaf: The loaf being edited.
+def collect_metrics_cmd(loaf: 'Loaf') -> None:
+    """
+    (CMD) Finds all metrics in the loaf that need to be printed and prints them.
+    """
+    collect_metrics(loaf, True)
+
+def add_cmd(loaf: object, text: str) -> None:
+    """
+    (CMD) Adds a crumb to the loaf.
+
     :param text: the text of the file in todo.txt format.
     """
     add_task(loaf, text)
@@ -26,27 +48,16 @@ def _add(loaf: object, text: str) -> None:
     clear()
     crumb(res, "BEADCRUMB TRAIL")
 
-def _nop(loaf: object) -> None:
+def nop_cmd(loaf: object) -> None:
     """
-    Do nothing.
-
-    :param loaf: The loaf being edited.
+    (CMD) Do nothing.
     """
     info("Use ?help to list commands")
     
-def _show_future(loaf: object) -> None:
-    """
-    See the future.
 
-    :param loaf: The loaf being edited.
+def help_cmd(loaf: object) -> None:
     """
-    _check_future_list(loaf)
-
-def _help(loaf: object) -> None:
-    """
-    Print the available crumb commands.
-
-    :param loaf: The loaf being edited.
+    (CMD) Print the available crumb commands.
     """
     clear()
     rule("HELP")
@@ -60,51 +71,47 @@ def _help(loaf: object) -> None:
         t.add_row(k, v, "Macro")
     figure([t])
 
-def _archive(loaf: object, crumb_id: str) -> None:
+def archive_cmd(loaf: object, search_str: str) -> None:
     """
-    Archive a crumb from a loaf.
+    (CMD) Archive a crumb from a loaf.
 
-    :param loaf: The loaf being edited.
-    :param crumb_id: the id of the crumb.
+    :param search_str: the id of the crumb.
     """
-    res = loaf_search(loaf, regex_str=crumb_id)
+    res = loaf_search(loaf, regex_str=search_str)
     archive(res)
     save(loaf)
     clear()
     crumb(res, "ARCHIVED")
     info(f"Archived {len(res)} crumbs.")
 
-def _unarchive(loaf: object, crumb_id: str) -> None:
+def unarchive_cmd(loaf: object, search_str: str) -> None:
     """
-    UNarchive a crumb from a loaf.
+    (CMD) UNarchive a crumb from a loaf.
 
-    :param loaf: The loaf being edited.
-    :param crumb_id: the id of the crumb.
+    :param search_str: the id of the crumb.
     """
-    res = loaf_search(loaf, regex_str=crumb_id)
+    res = loaf_search(loaf, regex_str=search_str)
     unarchive(res)
     save(loaf)
     clear()
     crumb(res, "UN-ARCHIVED")
     info(f"Un-Archived {len(res)} crumbs.")
 
-def _search(loaf: object, search_str: str) -> None:
+def search_cmd(loaf: object, search_str: str) -> None:
     """
-    Searches the loaf for a given query WITH regex!
+    (CMD) Searches the loaf for a given query WITH regex!
 
-    :param loaf: The loaf being edited.
     :param search_str: the query.
     """
     res = loaf_search(loaf, regex_str=search_str)
     clear()
     crumb(res, "SEARCH")
 
-def _list(loaf: object, count: str = "") -> None:
+def list_cmd(loaf: object, count: str = "") -> None:
     """
-    Show data view.
+    (CMD) Show crumb trail view.
 
-    :param loaf: The loaf being edited.
-    :param count: Count of crumbs to show.
+    :param count: Count of crumbs to show, defaults to last 24hr.
     """
     try:
         #TODO Shou,d probably remove this branch
@@ -116,21 +123,17 @@ def _list(loaf: object, count: str = "") -> None:
         clear()
         crumb(res, "BEADCRUMB TRAIL")
 
-def _debug(loaf: object) -> None:
+def debug_cmd(loaf: object) -> None:
     """
-    Show data view.
-
-    :param loaf: The loaf being edited.
+    (CMD) Enter a dbg session.
     """
     clear()
     rule("DEBUG MODE")
     breakpoint()
 
-def _undo(loaf: object) -> None:
+def undo_cmd(loaf: object) -> None:
     """
-    Undo a save.
-
-    :param loaf: The loaf being edited.
+    (CMD) Undo a save.
     """
     clear()
     rule("UNDO")
