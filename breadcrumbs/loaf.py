@@ -7,9 +7,9 @@ from typing import Any, Dict, Match, Union
 from pytodotxt import TodoTxt
 from re import search, sub
 from breadcrumbs.display import err, debug
-from breadcrumbs.config import DEFAULT_CONFIG_PATH, collect_config
+from breadcrumbs.config import collect_config, HookTypes, load_config
 from breadcrumbs.utils import save
-from hooks import call_hooks, HookTypes
+from enum import Enum, auto
 
 # The global config state
 CONFIG: Union[None, Dict[str, Any]] = None
@@ -101,6 +101,21 @@ def init_loaf() -> None:
     MUST BE CALLED BEFORE LOAF USAGE!
     """
     global LOAF, CONFIG
-    CONFIG = collect_config(DEFAULT_CONFIG_PATH)
+    CONFIG = load_config()
     LOAF = Loaf(config_data=CONFIG)
     debug(f"Loaded Loaf {LOAF}.")
+
+def call_hooks(hook: HookTypes) -> None:
+    """
+    Calls all hooks registered with a given name.
+
+    :args hook: The type of the hook in it.
+    """
+    h = LOAF.config_data["hooks"].get(hook, None)
+    if (not h):
+        return
+    debug(f"Calling internal hook {hook}.")
+    for hook_call in h:
+        debug(f"Calling {hook_call.__name__}")
+        hook_call(LOAF)
+

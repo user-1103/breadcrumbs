@@ -2,12 +2,12 @@
 Module that orchestrates the other modules.
 """
 from argparse import ArgumentParser, Namespace
-from breadcrumbs.hooks import HookTypes, call_hooks
 from signal import SIGINT, signal
 from sys import exit
 
 from breadcrumbs.display import SIMPLE, DEBUG, clear, debug, info, prompt
-from breadcrumbs.loaf import init_loaf, parse
+from breadcrumbs.loaf import init_loaf, parse, call_hooks
+from breadcrumbs.config import HookTypes
 
 def on_exit(signum, stack) -> None:
     """

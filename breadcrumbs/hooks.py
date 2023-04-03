@@ -7,47 +7,16 @@ from pytodotxt import Task
 from rich.table import Table
 from itertools import filterfalse
 from breadcrumbs.display import crumb, easy_lex, figure, debug
-from breadcrumbs.loaf import LOAF, Loaf
 import time
 from breadcrumbs.utils import loaf_search, order_by_date
-from enum import Enum, auto
 from breadcrumbs.metrics import collect_metrics, METRICS_FIRST_RUN
-
-# Tracks the money in an account
-PAY: Dict[str, List[float]] = dict()
 
 # How long to wait between figs
 FUTURE_WAIT = (60 * 30)
 # Stops the spaming of future figs
 LAST_FUTURE = time.time() - FUTURE_WAIT
 
-class HookTypes(Enum):
-    """
-    The types of hooks that can be hooked.
-    """
-    INIT = auto()
-    EXIT = auto()
-    PREMACRO = auto()
-    PRE = auto()
-    POST = auto()
-    OK = auto()
-    ERR = auto()
-
-def call_hooks(hook: HookTypes) -> None:
-    """
-    Calls all hooks registered with a given name.
-
-    :args hook: The type of the hook in it.
-    """
-    h = LOAF.config_data["hooks"].get(hook, None)
-    if (not h):
-        return
-    debug(f"Calling internal hook {hook}.")
-    for hook_call in h:
-        debug(f"Calling {hook_call.__name__}")
-        hook_call(LOAF)
-
-def future_cast_hook(loaf: Loaf) -> None:
+def future_cast_hook(loaf: 'Loaf') -> None:
     """
     (HOOK) Checks if the future should be scried.
     """

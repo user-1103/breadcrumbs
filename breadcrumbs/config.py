@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, Any
 import breadcrumbs.commands as dc
 import breadcrumbs.hooks as dh
-from breadcrumbs.hooks import HookTypes
 from os.path import isdir, isfile
 from os import mkdir
 import importlib.util
@@ -14,6 +13,18 @@ import sys
 from breadcrumbs.metrics import span, run_total, total_table
 
 from breadcrumbs.display import debug
+
+class HookTypes(Enum):
+    """
+    The types of hooks that can be hooked.
+    """
+    INIT = auto()
+    EXIT = auto()
+    PREMACRO = auto()
+    PRE = auto()
+    POST = auto()
+    OK = auto()
+    ERR = auto()
 
 def collect_config(path: Path) -> Dict[str, Any]:
     """
@@ -35,21 +46,22 @@ def collect_config(path: Path) -> Dict[str, Any]:
 def ensure_breadbox() -> str:
     """
     Ensures that a breadbox is present and retruns its location.
-    Will check the current directory and then ~/.breadbox . 
+    Will check the current directory and then ~/.breadbox .
     If it is not found create a ~/.breadbox with a default.loaf
 
     :return: The location of the breadbox.
     """
-    if (isdir("./.breadbox")):
-        if (not isfile("./.breadbox/default.loaf")):
+    if (isdir(Path(".breadbox"))):
+        if (not isfile(Path(".breadbox/default.loaf"))):
             Path(".breadbox/default.loaf").touch()
         return ".breadbox"
     else:
-        if (not isdir("~/.breadbox")):
-            mkdir("~/.breadbox")
-        if (not isfile("~/.breadbox/default.loaf")):
-            Path("~/.breadbox/default.loaf").touch()
-        return "~./breadbox"
+        home = Path.home()
+        if (not isdir(Path(f"{home}/.breadbox"))):
+            mkdir(Path(f"{home}/.breadbox"))
+        if (not isfile(Path(f"{home}/.breadbox/default.loaf"))):
+            Path(f"{home}/.breadbox/default.loaf").touch()
+        return f"{home}/.breadbox"
 
 DEFAULT_PATH = ensure_breadbox()
 DEFAULT_CONFIG_PATH = Path(f"{DEFAULT_PATH}/config.py")
@@ -64,7 +76,7 @@ DEFAULT_CONFIG = {
         HookTypes.PRE: [
         ],
         HookTypes.POST: [
-            dh.call_hooks,
+            dh.future_cast_hook,
             dh.collect_metrics_hook
         ],
         HookTypes.PREMACRO: [
