@@ -1,16 +1,13 @@
 """
 The default commands that are available.
 """
-from datetime import datetime, timedelta
-from time import time
-from pytodotxt import TodoTxt, Task
-from breadcrumbs.display import crumb, console, info, clear, figure, rule
-from re import search, I
-from itertools import dropwhile, filterfalse
+from datetime import datetime
+from pytodotxt import Task
+from breadcrumbs.display import crumb, info, clear, figure, rule
+from itertools import filterfalse
 from rich.table import Table
-from hashlib import md5
 from breadcrumbs.utils import add_task, archive, loaf_search, save, unarchive, undo, order_by_date
-from breadcrumbs.hooks import collect_metrics
+from breadcrumbs.metrics import collect_metrics
 
 def check_future_cmd(loaf: object) -> None:
     """

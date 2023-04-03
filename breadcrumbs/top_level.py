@@ -7,7 +7,7 @@ from signal import SIGINT, signal
 from sys import exit
 
 from breadcrumbs.display import SIMPLE, DEBUG, clear, debug, info, prompt
-from breadcrumbs.loaf import Loaf, init_loaf, parse
+from breadcrumbs.loaf import init_loaf, parse
 
 def on_exit(signum, stack) -> None:
     """
@@ -45,6 +45,7 @@ def run() -> None:
     """
     Loads a loaf in a cli, and allows the user to modify it.
     """
+    global DEBUG, SIMPLE
     signal(SIGINT, on_exit)
     args = parse_cli_args()
     init_loaf()

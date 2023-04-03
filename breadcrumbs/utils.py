@@ -2,15 +2,13 @@
 Module of common utilities for doing stuff.
 """
 
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 from itertools import filterfalse
 from pathlib import Path
 from re import search
 from typing import List, Union, Tuple
 from copy import deepcopy
-
 from pytodotxt import Task
-
 from breadcrumbs.display import debug
 
 def time_str_to_delta(ts: str) -> timedelta:

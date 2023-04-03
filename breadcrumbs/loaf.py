@@ -3,17 +3,12 @@ Contains basic Loaf based stuff.
 """
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Match, Tuple, Union
-from pytodotxt import TodoTxt, Task
-from argparse import ArgumentParser
+from typing import Any, Dict, Match, Union
+from pytodotxt import TodoTxt
 from re import search, sub
-from breadcrumbs.display import crumb, err, debug, clear
-from datetime import datetime, timedelta
-from itertools import filterfalse
-from enum import Enum, auto
-from functools import wraps
-from breadcrumbs.configs import DEFAULT_CONFIG_PATH, collect_config, load_config
-from breadcrumbs.utils import loaf_search, order_by_date, save
+from breadcrumbs.display import err, debug
+from breadcrumbs.config import DEFAULT_CONFIG_PATH, collect_config
+from breadcrumbs.utils import save
 from hooks import call_hooks, HookTypes
 
 # The global config state

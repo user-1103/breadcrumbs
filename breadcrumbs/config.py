@@ -11,6 +11,7 @@ from os.path import isdir, isfile
 from os import mkdir
 import importlib.util
 import sys
+from breadcrumbs.metrics import span, run_total, total_table
 
 from breadcrumbs.display import debug
 
@@ -93,26 +94,26 @@ DEFAULT_CONFIG = {
         r"\.\.c (.*)\s(.*)\.?": r"COST:\1/\2" # Cost str
     },
     "metrics": [
-        (dh.span, "TRACK"),
-        (dh.span, "MOOD"),
-        (dh.run_total, "COST"),
-        (dh.total_table, "brush"),
-        (dh.total_table, "teeth"),
-        (dh.total_table, "mwash"),
-        (dh.total_table, "shavef"),
-        (dh.total_table, "shaveb"),
-        (dh.total_table, "showere"),
-        (dh.total_table, "showern"),
-        (dh.total_table, "vit"),
-        (dh.total_table, "zol"),
-        (dh.total_table, "thy"),
-        (dh.total_table, "laundry"),
-        (dh.total_table, "sclean"),
-        (dh.total_table, "fclean"),
-        (dh.total_table, "exe"),
-        (dh.total_table, "stretch"),
-        (dh.total_table, "wake"),
-        (dh.total_table, "sleep")
+        (span, "TRACK"),
+        (span, "MOOD"),
+        (run_total, "COST"),
+        (total_table, "brush"),
+        (total_table, "teeth"),
+        (total_table, "mwash"),
+        (total_table, "shavef"),
+        (total_table, "shaveb"),
+        (total_table, "showere"),
+        (total_table, "showern"),
+        (total_table, "vit"),
+        (total_table, "zol"),
+        (total_table, "thy"),
+        (total_table, "laundry"),
+        (total_table, "sclean"),
+        (total_table, "fclean"),
+        (total_table, "exe"),
+        (total_table, "stretch"),
+        (total_table, "wake"),
+        (total_table, "sleep")
     ],
     "loaf": DEFAULT_LOAF_PATH,
     "config": DEFAULT_CONFIG_PATH
