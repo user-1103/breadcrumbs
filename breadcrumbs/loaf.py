@@ -3,13 +3,14 @@ Contains basic Loaf based stuff.
 """
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Match, Union
-from pytodotxt import TodoTxt
+from typing import Any, Dict, Match, Union, List
+from pytodotxt import TodoTxt, Task
 from re import search, sub
-from breadcrumbs.display import err, debug
+from breadcrumbs.display import err, debug, info
 from breadcrumbs.config import collect_config, HookTypes, load_config
 from breadcrumbs.utils import save
 from enum import Enum, auto
+from time import time
 
 # The global config state
 CONFIG: Union[None, Dict[str, Any]] = None
@@ -26,7 +27,9 @@ class Loaf():
     # The crumbs
     crumbs: Union[TodoTxt, None] = None
     # space for undo actions.
-    _crumbs: Union[TodoTxt, None] = None
+    buffer: Union[List[Task], None] = None
+    # selection.buffer timeout time
+    buffer_time: float = 0
 
     def __post_init__(self) -> None:
         """
@@ -36,6 +39,28 @@ class Loaf():
         self.crumbs.parse()
         if (self.crumbs.tasks is not None):
             save(self)
+
+    def get_buffer(self) -> List[Task]:
+        """
+        Gets the active buffer, returns an empty buffer if it has timed out.
+
+        :returns: The active buffer.
+        """
+        if ((self.buffer_time <= time()) or (self.buffer is None)):
+            self.buffer_time = (time() + 30)
+            self.buffer = list()
+        else:
+            self.buffer_time += 30
+        return self.buffer
+
+    def set_buffer(self, data: List[Task]) -> None:
+        """
+        Sets the active buffer, resets the timeout.
+
+        :param data: The value to set the buffer to.
+        """
+        self.buffer_time = (time() + 30)
+        self.buffer = data
 
 def expand_macros(user_input: str) -> str:
     """

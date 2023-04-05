@@ -60,6 +60,7 @@ def run() -> None:
         parse(args.crumb_command)
     else:
         repl()
+    call_hooks(HookTypes.EXIT)
 
 def repl() -> None:
     """

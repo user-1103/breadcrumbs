@@ -2,7 +2,7 @@
 Module of common utilities for doing stuff.
 """
 
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from itertools import filterfalse
 from pathlib import Path
 from re import search
@@ -36,36 +36,53 @@ def time_str_to_delta(ts: str) -> timedelta:
     t = timedelta(**tmp)
     return t
 
-def task_to_make_date(t: Task) -> datetime:
+def task_to_make_date(t: Task, d_tag: Union[None, str] = None,
+                      t_tag: str = "TIME") -> datetime:
     """
-    Finds the make date of a task from the make date, and TIME tag.
+    Creates a datetime from a non archived crumb, from a  given set of tags.
 
     :param t: the task to process.
+    :param d_tag: The tag of the day component. If none, use make time.
+    :param t_tag: The tag of the time component.
     :retrun: a new datetime object.
     """
-    T = t.attributes.get("TIME", [None])[0]
+    T = t.attributes.get(t_tag, [None])[0]
     if (T is None):
         T = "01-01"
-    D = t.creation_date
+    if (d_tag is None):
+        D = t.creation_date
+    else:
+        D = t.attributes.get(d_tag, [None])[0]
     if (D is None):
         D = datetime.fromisoformat("1970-01-01")
+    if (isinstance(D, str)):
+        D = date.fromisoformat(D)
     h, m = T.split("-")
     ret = datetime.combine(D, time(hour=int(h), minute=int(m)))
     return ret
 
-def task_to_archive_date(t: Task) -> datetime:
+def task_to_archive_date(t: Task, d_tag: Union[None, str] = None,
+                      t_tag: str = "ATIME") -> datetime:
     """
-    Finds the archive date of a task from the make date, and ATIME tag.
+    Creates a datetime from an archived crumb, from a  given set of tags.
 
     :param t: the task to process.
+    :param d_tag: The tag of the day component. If none, use make time.
+    :param t_tag: The tag of the time component.
     :retrun: a new datetime object.
     """
-    T = t.attributes.get("ATIME", [None])[0]
+    T = t.attributes.get(t_tag, [None])[0]
     if (T is None):
         T = "01-01"
     D = t.completion_date
+    if (d_tag is None):
+        D = t.creation_date
+    else:
+        D = t.attributes.get(d_tag, [None])[0]
     if (D is None):
         D = datetime.fromisoformat("1970-01-01")
+    if (isinstance(D, str)):
+        D = date.fromisoformat(D)
     h, m = T.split("-")
     ret = datetime.combine(D, time(hour=int(h), minute=int(m)))
     return ret
@@ -237,19 +254,26 @@ def unarchive(task_list: List[Task]) -> None:
         task.remove_attribute("ATIME")
         task.is_completed = False
 
-def add_task(loaf: 'Loaf', task: str) -> None:
+def add_task(loaf: 'Loaf', task: str) -> Task:
     """
     Adds a task in the right way!.
 
     :param loaf: The loaf to add to.
     :param task: The TodoTxt task text.
+    :return: The newly created crumb.
     """
     dt = datetime.now().time().isoformat("minutes")
     dt = dt.replace(":", "-")
     tmp = Task(task)
-    tmp.add_attribute("TIME", dt)
+    if (tmp.attributes):
+        is_time = tmp.attributes.get("TIME", [dt])[0]
+    else:
+        is_time = dt
+    tmp.add_attribute("TIME", is_time)
+    if (tmp.creation_date is None):
+        tmp.creation_date = datetime.now()
     loaf.crumbs.add(tmp)
-    tmp.creation_date = datetime.now()
+    return tmp
 
 def save(loaf: 'Loaf') -> None:
     """
@@ -257,8 +281,6 @@ def save(loaf: 'Loaf') -> None:
 
     :param loaf: the loaf to save.
     """
-    loaf._crumbs = deepcopy(loaf.crumbs)
-    loaf._crumbs.save(Path("./.loaf.bac"))
     order_by_date(loaf.crumbs.tasks)
     loaf.crumbs.save(safe=True)
 
@@ -268,6 +290,5 @@ def undo(loaf: 'Loaf') -> None:
 
     :param loaf: the loaf to save.
     """
-    loaf.crumbs = loaf._crumbs
-    loaf.crumbs.save(safe=True)
-    loaf._crumbs = None
+    # TODO a more comprehensive undo / backup
+    ...

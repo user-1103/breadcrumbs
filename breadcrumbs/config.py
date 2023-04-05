@@ -70,6 +70,7 @@ DEFAULT_LOAF_PATH = Path(f"{DEFAULT_PATH}/default.loaf")
 DEFAULT_CONFIG = {
     "hooks": {
         HookTypes.INIT: [
+            dh.collect_metrics_hook
         ],
         HookTypes.EXIT: [
         ],
@@ -87,45 +88,59 @@ DEFAULT_CONFIG = {
         ]
     },
     "cmds": {
-        r"^\?help": dc.help_cmd,
+        # Arguments
+        r"^\?m (.*)": dc.collect_metrics_cmd,
+        r"^\?v (.*)": dc.search_cmd,
+        r"^\?v! (.*)": dc.search_archive_cmd,
+        r"^\?vv (.*)": dc.advanced_search_cmd,
+        r"^\?f (.*)": dc.check_future_cmd,
+        r"^\?b (.*)": dc.block_cmd,
+        r"^\?e (.*)": dc.add_cmd,
+        r"^\?e! (.*)": dc.raw_add_cmd,
+        # No arguments
+        r"^\?a": dc.archive_cmd,
+        r"^\?A": dc.unarchive_cmd,
+        r"^\?hm": dc.list_metrics_cmd,
+        r"^\?hv": dc.list_buffer_cmd,
+        r"^\?h": dc.help_cmd,
+        r"^\?u": dc.undo_cmd,
         r"^\?debug": dc.debug_cmd,
-        r"^\?l ?(.*)": dc.list_cmd,
-        r"^\?f": dc.check_future_cmd,
-        r"^\?m": dc.collect_metrics_cmd,
-        r"^\?s (.*)": dc.search_cmd,
-        r"^\?a (.*)": dc.archive_cmd,
-        r"^\?A (.*)": dc.unarchive_cmd,
+        r"^\?l": dc.list_cmd,
+        r"^\?f": dc.check_future_now_cmd,
+        r"^\?m": dc.collect_all_metrics_cmd,
+        # Defaults
         r"^\?.*": dc.nop_cmd,
         r"^(.*)": dc.add_cmd
     },
     "macros": {
-        r"\.\.t (.*)\.?": r"TRACK:\1", # start a tracking session
-        r"\.\.m (.*)\.?": r"MOOD:\1", # start a tracking session
-        r"\.\.f (.*)\.?": r"FUTURE:\1", # Mark for the future
-        r"\.\.n (.*)\.?": r"\1:1", # Genaric metric note
-        r"\.\.c (.*)\s(.*)\.?": r"COST:\1/\2" # Cost str
+        r"\.\.t (\S*)": r"TRACK:\1", # start a tracking session
+        r"\.\.m (\S*)": r"MOOD:\1", # start a tracking session
+        r"\.\.f (\S*)": r"FUTURE:\1", # Mark for the future
+        r"\.\.n (\S*)": r"\1:1", # Genaric metric note
+        r"\.\.c (\S*) (\S*)\.?": r"COST:\1/\2" # Cost str
     },
     "metrics": [
-        (span, "TRACK"),
-        (span, "MOOD"),
-        (run_total, "COST"),
-        (total_table, "brush"),
-        (total_table, "teeth"),
-        (total_table, "mwash"),
-        (total_table, "shavef"),
-        (total_table, "shaveb"),
-        (total_table, "showere"),
-        (total_table, "showern"),
-        (total_table, "vit"),
-        (total_table, "zol"),
-        (total_table, "thy"),
-        (total_table, "laundry"),
-        (total_table, "sclean"),
-        (total_table, "fclean"),
-        (total_table, "exe"),
-        (total_table, "stretch"),
-        (total_table, "wake"),
-        (total_table, "sleep")
+        (span,        "TRACK",        {},         True),
+        (span,        "MOOD",         {},         True),
+        (run_total,   "COST",         {},         True),
+        (total_table, "brush",        {},         True),
+        (total_table, "floss",        {},         True),
+        (total_table, "mwash",        {},         True),
+        (total_table, "shavef",       {},         True),
+        (total_table, "shaveb",       {},         True),
+        (total_table, "showere",      {},         True),
+        (total_table, "showern",      {},         True),
+        (total_table, "vit",          {},         True),
+        (total_table, "zol",          {},         True),
+        (total_table, "thy",          {},         True),
+        (total_table, "laundry",      {},         True),
+        (total_table, "sclean",       {},         True),
+        (total_table, "fclean",       {},         True),
+        (total_table, "exe",          {},         True),
+        (total_table, "str",          {},         True),
+        (total_table, "wake",         {},         True),
+        (total_table, "meal",         {},         True),
+        (total_table, "sleep",        {},         True)
     ],
     "loaf": DEFAULT_LOAF_PATH,
     "config": DEFAULT_CONFIG_PATH

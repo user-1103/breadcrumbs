@@ -10,9 +10,9 @@ from rich.syntax import Syntax
 from breadcrumbs.lexer import TodotxtLexer
 import readline
 # Wether to print in a undecorated form
-SIMPLE = False
+SIMPLE = True
 # To print debug info
-DEBUG = False
+DEBUG = True
 # The todo lexer to Use
 lex = TodotxtLexer()
 
