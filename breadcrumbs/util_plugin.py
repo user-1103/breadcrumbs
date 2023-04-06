@@ -8,7 +8,7 @@ from typing import Dict, Any
 
 from pytodotxt import Task, TodoTxt
 from rich.table import Table
-from breadcrumbs.utils import add_task, archive, loaf_search, unarchive
+from breadcrumbs.utils import add_task, archive, loaf_search, unarchive, get_buffer, set_buffer
 
 
 def print_buffer_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -17,11 +17,13 @@ def print_buffer_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     - Prints the contents of the selected buffer.
     - Does not save under any condition.
     """
-    res = conf["utils"]["get_buffer"]()
+    res = get_buffer(conf)
     buffer_time = conf["buffers"]["selection_buffer_exp"]
     exp_time = datetime.fromtimestamp(buffer_time)
     conf["log"]["clear"]()
-    conf["log"]["crumb"](res)
+    conf["log"]["title"]("SELECTION BUFFER")
+    for x in res:
+        conf["log"]["crumb"](x)
     if (not res):
         conf["log"]["info"]("Buffer is empty...")
     else:
@@ -41,7 +43,7 @@ def raw_add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     conf["log"]["title"]("BREADCRUMB TRAIL")
     for x in res:
         conf["log"]["crumb"](x)
-    conf["util"]["set_buffer"](res)
+    set_buffer(conf, [tmp])
     return True
 
 def add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -50,13 +52,13 @@ def add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     - Adds a crumb.
     - Saves. Sets selection buffer.
     """
-    add_task(loaf, args)
+    tmp = add_task(loaf, args)
     res = loaf_search(loaf, span="1d-~", archived=False)
     conf["log"]["clear"]()
     conf["log"]["title"]("BREADCRUMB TRAIL")
     for x in res:
         conf["log"]["crumb"](x)
-    conf["util"]["set_buffer"](res)
+    set_buffer(conf, [tmp])
     return True
 
 def block_add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -83,20 +85,22 @@ def block_add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     add_text = ""
     tmp = list()
     while (True):
-        add_text = conf["log"]["prompt"]
+        add_text = conf["log"]["prompt"]()
         if (add_text == "END"):
             break
         tmp.append(add_task(loaf, f"{prefix_str} {add_text} {postfix_str}"))
         conf["log"]["clear"]()
         conf["log"]["title"]("BLOCK EDIT")
         conf["log"]["figure"](t)
-        conf["log"]["crumb"](tmp)
+        for x in tmp:
+            conf["log"]["crumb"](x)
     conf["log"]["clear"]()
     conf["log"]["title"]("BLOCK EDIT")
     conf["log"]["figure"](t)
-    conf["log"]["crumb"](tmp)
+    for x in tmp:
+        conf["log"]["crumb"](x)
     conf["log"]["info"]("Saving Block")
-    conf["util"]["set_buffer"](tmp)
+    set_buffer(conf, tmp)
     return True
 
 def nop_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -156,7 +160,7 @@ def hooks_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
         tmp = ""
         for x in v:
             tmp += f"{x.__name__}\n"
-        t.add_row(f"{k}", k, tmp)
+        t.add_row(k, tmp)
     conf["log"]["figure"](t)
     return False
 
@@ -166,7 +170,7 @@ def archive_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     - Archive all crumbs in selection buffer.
     - Always saves.
     """
-    res = conf["utils"]["get_buffer"]()
+    res = get_buffer(conf)
     archive(res)
     conf["log"]["clear"]()
     conf["log"]["title"]("ARCHIVED")
@@ -181,7 +185,7 @@ def unarchive_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     - Unarchive all crumbs in selection buffer.
     - Always saves.
     """
-    res = conf["utils"]["get_buffer"]()
+    res = get_buffer(conf)
     unarchive(res)
     conf["log"]["clear"]()
     conf["log"]["title"]("UNARCHIVED")
@@ -198,7 +202,7 @@ def select_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     """
     res = loaf_search(loaf, regex_str=args,
                       archived=False)
-    conf["utils"]["set_buffer"](res)
+    set_buffer(conf, res)
     conf["log"]["clear"]()
     conf["log"]["title"]("SELECT")
     for x in res:
@@ -213,7 +217,7 @@ def select_archive_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     """
     res = loaf_search(loaf, regex_str=args,
                       archived=True)
-    conf["utils"]["set_buffer"](res)
+    set_buffer(conf, res)
     conf["log"]["clear"]()
     conf["log"]["title"]("STALE SELECT")
     for x in res:
@@ -228,7 +232,7 @@ def advanced_select_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     """
     search_json = loads(args)
     res = loaf_search(loaf, **search_json)
-    conf["utils"]["set_buffer"](res)
+    set_buffer(conf, res)
     conf["log"]["clear"]()
     conf["log"]["title"]("ADVANCED SELECT")
     for x in res:
@@ -269,7 +273,7 @@ def substitute_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     - Always saves.
     """
     before_regex, after_regex = args.split("/")
-    res = conf["utils"]["get_buffer"]()
+    res = get_buffer(conf)
     conf["log"]["clear"]()
     conf["log"]["title"]("SUBSITUTE")
     t = Table("Changes")
@@ -277,7 +281,6 @@ def substitute_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     t.add_column("After")
     for x in res:
         tmp = x.description
-        conf["log"]["figure"](x)
         sub(before_regex, after_regex, x.description)
         t.add_row(tmp, x.description)
     conf["log"]["figure"](t)
@@ -326,14 +329,10 @@ def load_plugin() -> Dict[str, Any]:
     }
 
     config = {
-        "core": plugin_data,
+        'plugins': {"core": plugin_data},
         'commands': commands,
         'default_command': nop_cmd,
         'null_command': add_cmd,
     }
 
     return config
-
-
-
-

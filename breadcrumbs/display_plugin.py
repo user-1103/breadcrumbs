@@ -90,7 +90,6 @@ def debug_log(text: Any = "Default Text", err: Union[Exception, None] = None,
     elif (ltype == LogType.FATAL):
         log("<FATAL>")
         log(text)
-        console.print_exception()
 
 def normal_log(text: Any = "Default Text", err: Union[Exception, None] = None,
                ltype: LogType = LogType.INFO) -> None:
@@ -122,8 +121,9 @@ def normal_log(text: Any = "Default Text", err: Union[Exception, None] = None,
     elif (ltype == LogType.TITLE):
         console.rule(text)
     elif (ltype == LogType.ERR):
-        tmp = f"  🡢  {text} (ERROR)"
+        tmp = f"  🡢  {text} (ERROR) 🡢  {type(err)}: {err}"
         console.print(tmp, style="red")
+        console.print_exception()
     elif (ltype == LogType.FATAL):
         tmp = f"  🡢  {text} (EXIT)"
         console.print(tmp, style="red")
@@ -144,35 +144,35 @@ def json_log(text: Any = "Default Text", err: Union[Exception, None] = None,
     if (ltype == LogType.CRUMB):
         tmp = {
             "_type": "crumb",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json + ",")
     elif (ltype == LogType.FIGURE):
         tmp = {
             "_type": "figure",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json + ",")
     elif (ltype == LogType.INFO):
         tmp = {
             "_type": "info",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json + ",")
     elif (ltype == LogType.WARN):
         tmp = {
             "_type": "warn",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json + ",")
     elif (ltype == LogType.DEBUG):
         tmp = {
             "_type": "debug",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json + ",")
@@ -185,21 +185,21 @@ def json_log(text: Any = "Default Text", err: Union[Exception, None] = None,
     elif (ltype == LogType.TITLE):
         tmp = {
             "_type": "title",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json + ",")
     elif (ltype == LogType.ERR):
         tmp = {
             "_type": "err",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json + ",")
     elif (ltype == LogType.FATAL):
         tmp = {
             "_type": "fatal",
-            "data": text
+            "data": str(text)
         }
         tmp_json = dumps(tmp)
         print(tmp_json)
@@ -251,7 +251,7 @@ def prompt(text: str = "") -> str:
     :param text: A question for the user.
     :return: The user input.
     """
-    text = f" {text} 🡠 "
+    text = f" {text} 🡠  "
     ret = input(text)
     return ret
 
@@ -266,16 +266,19 @@ def display_test_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     t.add_row("Wonder", "0/10")
     t.add_row("Ezekiel", "5/10")
     t.add_row("Garlic", "10/10")
-    for name, profile in conf["display_settings"].values():
+    for name, profile in conf["display"].items():
         profile["clear"]()
         profile["title"]("DISPLAY TEST")
         profile["crumb"](Task("(A) 1971-01-01 Example Crumb +test @debug tag:true"))
         profile["crumb"](Task("x (A) 1971-01-01 Example Crumb +test @debug tag:true"))
-        profile["Figure"](t)
+        profile["figure"](t)
         profile["info"]("Putting bread in oven...")
         profile["debug"]("Oven at 1000 degrees C.")
         profile["warn"]("Oven is smoking...")
-        profile["err"]("Oven is on fire...", Exception("lp0 on fire"))
+        try:
+            raise Exception("lp0 on fire")
+        except Exception as e:
+            profile["err"]("Oven is on fire...", e)
         profile["fatal"]("Run.")
         profile["prompt"]("Enter some text to continue.")
     return False
@@ -309,6 +312,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": lambda x: debug_log(x, ltype=LogType.CRUMB),
             "figure": lambda x: debug_log(x, ltype=LogType.FIGURE),
             "info": lambda x: debug_log(x, ltype=LogType.INFO),
+            "debug": lambda x: debug_log(x, ltype=LogType.DEBUG),
             "warn": lambda x: debug_log(x, ltype=LogType.WARN),
             "err": lambda x, y: debug_log(x, y, ltype=LogType.ERR),
             "fatal": lambda x: debug_log(x, ltype=LogType.FATAL),
@@ -320,6 +324,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": lambda x: normal_log(x, ltype=LogType.CRUMB),
             "figure": lambda x: normal_log(x, ltype=LogType.FIGURE),
             "info": lambda x: normal_log(x, ltype=LogType.INFO),
+            "debug": lambda x: normal_log(x, ltype=LogType.DEBUG),
             "warn": lambda x: normal_log(x, ltype=LogType.WARN),
             "err": lambda x, y: normal_log(x, y, ltype=LogType.ERR),
             "fatal": lambda x: normal_log(x, ltype=LogType.FATAL),
@@ -331,6 +336,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": lambda x: json_log(x, ltype=LogType.CRUMB),
             "figure": lambda x: json_log(x, ltype=LogType.FIGURE),
             "info": lambda x: json_log(x, ltype=LogType.INFO),
+            "debug": lambda x: json_log(x, ltype=LogType.DEBUG),
             "warn": lambda x: json_log(x, ltype=LogType.WARN),
             "err": lambda x, y: json_log(x, y, ltype=LogType.ERR),
             "fatal": lambda x: json_log(x, ltype=LogType.FATAL),
@@ -342,6 +348,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": lambda x: simple_log(x, ltype=LogType.CRUMB),
             "figure": lambda x: simple_log(x, ltype=LogType.FIGURE),
             "info": lambda x: simple_log(x, ltype=LogType.INFO),
+            "debug": lambda x: simple_log(x, ltype=LogType.DEBUG),
             "warn": lambda x: simple_log(x, ltype=LogType.WARN),
             "err": lambda x, y: simple_log(x, y, ltype=LogType.ERR),
             "fatal": lambda x: simple_log(x, ltype=LogType.FATAL),
@@ -352,15 +359,14 @@ def load_plugin() -> Dict[str, Any]:
         }
 
     commands = {
-        "display_test": display_test_cmd
+        "display-test": display_test_cmd
     }
 
     config = {
-        "display_plugin": plugin_data,
+        'plugins': {"display": plugin_data},
         "display": display_settings,
         'commands': commands,
         'log': display_settings["normal"]
     }
 
     return config
-

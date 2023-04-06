@@ -6,14 +6,14 @@ from datetime import date, datetime, time, timedelta
 from itertools import filterfalse
 from pathlib import Path
 from re import search
-from typing import List, Union, Tuple
+from typing import Any, Dict, List, Union, Tuple
 from copy import deepcopy
-from pytodotxt import Task
-from breadcrumbs.display import debug
+from pytodotxt import Task, TodoTxt
+import time as old_time
 
-def time_str_to_delta(ts: str) -> timedelta:
+def span_to_delta(ts: str) -> timedelta:
     """
-    Takes a time string and returns an equivalent time delta.
+    Takes a span and returns an equivalent time delta.
 
     :param ts: A sting of the form <int><m,h,d,w,y>
     :return: A time delta.
@@ -39,7 +39,7 @@ def time_str_to_delta(ts: str) -> timedelta:
 def task_to_make_date(t: Task, d_tag: Union[None, str] = None,
                       t_tag: str = "TIME") -> datetime:
     """
-    Creates a datetime from a non archived crumb, from a  given set of tags.
+    Creates a datetime of an archived crumbs make date.
 
     :param t: the task to process.
     :param d_tag: The tag of the day component. If none, use make time.
@@ -64,7 +64,7 @@ def task_to_make_date(t: Task, d_tag: Union[None, str] = None,
 def task_to_archive_date(t: Task, d_tag: Union[None, str] = None,
                       t_tag: str = "ATIME") -> datetime:
     """
-    Creates a datetime from an archived crumb, from a  given set of tags.
+    Creates a datetime of an archived crumbs archive date.
 
     :param t: the task to process.
     :param d_tag: The tag of the day component. If none, use make time.
@@ -87,7 +87,7 @@ def task_to_archive_date(t: Task, d_tag: Union[None, str] = None,
     ret = datetime.combine(D, time(hour=int(h), minute=int(m)))
     return ret
 
-def parse_date_range(dr: str) -> Tuple[datetime, datetime]:
+def parse_span(span: str) -> Tuple[datetime, datetime]:
     """
     Takes a span of date specification.
 
@@ -96,12 +96,12 @@ def parse_date_range(dr: str) -> Tuple[datetime, datetime]:
     specify minutes, hours, days, weeks, and years.
     :return: A tuple of the start date and end date of the span.
     """
-    before, after = dr.split("-")
+    before, after = span.split("-")
     if (before == "~"):
         before_t = datetime(1970, 1, 1)
     else:
         try:
-            before_d = time_str_to_delta(before)
+            before_d = span_to_delta(before)
             before_t = datetime.now() - before_d
         except Exception as E:
             raise Exception("Invalid range.")
@@ -109,7 +109,7 @@ def parse_date_range(dr: str) -> Tuple[datetime, datetime]:
         after_t = datetime.now()
     else:
         try:
-            after_d = time_str_to_delta(after)
+            after_d = span_to_delta(after)
             after_t = datetime.now() - after_d
         except Exception as E:
             raise Exception("Invalid range.")
@@ -137,13 +137,13 @@ def order_by_date(task_list: List[Task],
     task_list.sort(key=sort_method)
 
 
-def loaf_search(loaf: 'Loaf',
+def loaf_search(loaf: TodoTxt,
                 regex_str: Union[str,None] = None,
                 raw_text: bool = False,
                 archived: Union[bool, None] = None,
                 priority: Union[str, None] = None,
-                time_str: Union[str, None] = None,
-                archived_time_str: Union[str, None] = None) -> List[Task]:
+                span: Union[str, None] = None,
+                archived_span: Union[str, None] = None) -> List[Task]:
     """
     Searches the provided loaf for a given set of paramters and returns a list
     of Task objects. If a parameter is set to None it will not be considered.
@@ -156,11 +156,11 @@ def loaf_search(loaf: 'Loaf',
     archive dates.
     :param archive: Is the task arrived?
     :param priority: A-Z priority char, "" for no priority.
-    :param time_str: A string of the format TIMEDATE-TIMEDATE where TIMEDATE
+    :param span: A string of the format TIMEDATE-TIMEDATE where TIMEDATE
     can be ~ to indicate an open interval, or an int followed by m,h,d,w,y to
     specify minutes, hours, days, weeks, and years. This is used to filter the
     creation_date.
-    :param archived_time_str: Same as the time_str, but filters the archive date.
+    :param archived_span: Same as the span, but filters the archive date.
     NOTE The m and h marks are meaningless for this field.
     :return: A list of matching tasks.
     """
@@ -172,8 +172,6 @@ def loaf_search(loaf: 'Loaf',
         else:
             tex = x.description
         if (tex is None):
-            debug("No Description")
-            debug(x)
             return True
         reg = search(regex_str, tex)
         if (reg is None):
@@ -195,9 +193,9 @@ def loaf_search(loaf: 'Loaf',
         ret = not (priority == x.priority)
         return ret
 
-    def filter_time_str(x: Task) -> bool:
-        nonlocal time_str
-        before_t, after_t = parse_date_range(time_str)
+    def filter_span(x: Task) -> bool:
+        nonlocal span
+        before_t, after_t = parse_span(span)
         task_time = task_to_make_date(x)
         now = datetime.now()
         if ((before_t <= task_time) and (task_time <= after_t)):
@@ -206,9 +204,9 @@ def loaf_search(loaf: 'Loaf',
             ret = True
         return ret
 
-    def filter_archive_time_str(x: Task) -> bool:
-        nonlocal archived_time_str
-        before_t, after_t = parse_date_range(archived_time_str)
+    def filter_archive_span(x: Task) -> bool:
+        nonlocal archived_span
+        before_t, after_t = parse_span(archived_span)
         task_time = task_to_archive_date(x)
         now = datetime.now()
         if ((before_t <= task_time) and (task_time <= after_t)):
@@ -217,19 +215,17 @@ def loaf_search(loaf: 'Loaf',
             ret = True
         return ret
 
-    res = list(loaf.crumbs.tasks)
+    res = list(loaf.tasks)
     if (archived is not None):
         res = list(filterfalse(filter_archive, res))
     if (priority is not None):
         res = list(filterfalse(filter_priority, res))
-    if (time_str is not None):
-        res = list(filterfalse(filter_time_str, res))
-    if (archived_time_str is not None):
-        res = list(filterfalse(filter_archive_time_str, res))
+    if (span is not None):
+        res = list(filterfalse(filter_span, res))
+    if (archived_span is not None):
+        res = list(filterfalse(filter_archive_span, res))
     if (regex_str is not None):
         res = list(filterfalse(filter_regex, res))
-    debug("Post Filter")
-    debug(res)
     return res
 
 def archive(task_list: List[Task]) -> None:
@@ -254,7 +250,7 @@ def unarchive(task_list: List[Task]) -> None:
         task.remove_attribute("ATIME")
         task.is_completed = False
 
-def add_task(loaf: 'Loaf', task: str) -> Task:
+def add_task(loaf: TodoTxt, task: str) -> Task:
     """
     Adds a task in the right way!.
 
@@ -272,19 +268,19 @@ def add_task(loaf: 'Loaf', task: str) -> Task:
     tmp.add_attribute("TIME", is_time)
     if (tmp.creation_date is None):
         tmp.creation_date = datetime.now()
-    loaf.crumbs.add(tmp)
+    loaf.add(tmp)
     return tmp
 
-def save(loaf: 'Loaf') -> None:
+def save(loaf: TodoTxt) -> None:
     """
     Saves the loaf in an undooable way.
 
     :param loaf: the loaf to save.
     """
-    order_by_date(loaf.crumbs.tasks)
-    loaf.crumbs.save(safe=True)
+    order_by_date(loaf.tasks)
+    loaf.save(safe=True)
 
-def undo(loaf: 'Loaf') -> None:
+def undo(loaf: TodoTxt) -> None:
     """
     Undo the last save action.
 
@@ -292,3 +288,27 @@ def undo(loaf: 'Loaf') -> None:
     """
     # TODO a more comprehensive undo / backup
     ...
+
+def get_buffer(conf: Dict[str, Any]) -> List[Task]:
+    """
+    Gets the active buffer, returns an empty buffer if it has timed out.
+
+    :param conf: The configuration where the buffer is located.
+    """
+    buffer = conf["buffers"]["selection_buffer"]
+    buffer_time = conf["buffers"]["selection_buffer_exp"]
+    if ((buffer_time <= old_time.time()) or (buffer is None)):
+        buffer = list()
+    else:
+        conf["buffers"]["selection_buffer_exp"] = (old_time.time() + 30)
+    return buffer
+
+def set_buffer(conf: Dict[str, Any], data: List[Task]) -> None:
+    """
+    Sets the active buffer, resets the timeout.
+
+    :param conf: The configuration where the buffer is located.
+    :param data: The value to set the buffer to.
+    """
+    conf["buffers"]["selection_buffer"] = data
+    conf["buffers"]["selection_buffer_exp"] = (old_time.time() + 30)

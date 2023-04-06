@@ -26,7 +26,7 @@ class Loaf():
     config_data: Dict[str, Any]
     # The crumbs
     crumbs: Union[TodoTxt, None] = None
-    # space for undo actions.
+    # selection.buffer
     buffer: Union[List[Task], None] = None
     # selection.buffer timeout time
     buffer_time: float = 0

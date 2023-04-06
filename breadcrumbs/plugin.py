@@ -51,6 +51,8 @@ def load_plugin() -> Dict[str, Any]:
             "figure": "some_function(Any) -> None",
             # Prints a single "toast" line of text
             "info": "some_function(Any) -> None",
+            # Prints a debug message
+            "debug": "some_function(Any) -> None",
             # Prints a single  warning "toast" line of text
             "warn": "some_function(Any) -> None",
             # Prints a error
@@ -146,7 +148,7 @@ def load_plugin() -> Dict[str, Any]:
 
     config = {
         # pick a unique name so it does not conflict with other plugins
-        "example_plugin": plugin_data,
+        'plugins': {"example_plugin": plugin_data},
         # This is where the program expects program data to be
         "breadbox": 'Path("./path/to/the/breadbox")',
         # This is where one can fiddle with how things are displayed

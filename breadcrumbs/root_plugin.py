@@ -3,10 +3,15 @@ A module that defines the root plugin (which defines the defaults) and the
 method for loading plugins.
 """
 
-from typing import Dict, Any
+from typing import Callable, Dict, Any, List
 from pathlib import Path
 from os.path import isdir, isfile
 from os import mkdir
+
+from rich import print
+from breadcrumbs.plugin_dir import directory
+import importlib.util
+import sys
 
 from pytodotxt import TodoTxt
 
@@ -36,13 +41,15 @@ def ensure_breadbox() -> str:
             Path(f"{home}/.breadbox/default.loaf").touch()
         return f"{home}/.breadbox"
 
-def null_function(*args, name:str = "<unknown>", **argd) -> None:
+def null_function(*args, name:str = "<unknown>", **argd) -> Callable:
     """
     This should never be called and is a placeholer.
 
     :param name: Which config value is this standing in for.
     """
-    raise Exception(f"Required config value {name} never set!")
+    def null():
+        raise Exception(f"Required config value {name} never set!")
+    return null
 
 def ping_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     """
@@ -80,7 +87,7 @@ def load_plugin() -> Dict[str, Any]:
         "website": "https://github.com/user-1103/breadcrumbs",
         "version": "0.1",
         "description": "The root plugin.",
-        "imports": [user_conf],
+        "imports": ['display', 'core'],
         "lib": {},
         "help": {
             "usage": ("If you are reading this, you are already using this"
@@ -93,6 +100,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": null_function(name="display_settings.debug.crumb"),
             "figure": null_function(name="display_settings.debug.figure"),
             "info": null_function(name="display_settings.debug.info"),
+            "debug": null_function(name="display_settings.debug.debug"),
             "warn": null_function(name="display_settings.debug.warn"),
             "err": null_function(name="display_settings.debug.err"),
             "fatal": null_function(name="display_settings.debug.fatal"),
@@ -104,6 +112,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": null_function(name="display_settings.normal.crumb"),
             "figure": null_function(name="display_settings.normal.figure"),
             "info": null_function(name="display_settings.normal.info"),
+            "debug": null_function(name="display_settings.normal.debug"),
             "warn": null_function(name="display_settings.normal.warn"),
             "err": null_function(name="display_settings.normal.err"),
             "fatal": null_function(name="display_settings.normal.fatal"),
@@ -115,6 +124,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": null_function(name="display_settings.json.crumb"),
             "figure": null_function(name="display_settings.json.figure"),
             "info": null_function(name="display_settings.json.info"),
+            "debug": null_function(name="display_settings.json.debug"),
             "warn": null_function(name="display_settings.json.warn"),
             "err": null_function(name="display_settings.json.err"),
             "fatal": null_function(name="display_settings.json.fatal"),
@@ -126,6 +136,7 @@ def load_plugin() -> Dict[str, Any]:
             "crumb": null_function(name="display_settings.simple.crumb"),
             "figure": null_function(name="display_settings.simple.figure"),
             "info": null_function(name="display_settings.simple.info"),
+            "debug": null_function(name="display_settings.simple.debug"),
             "warn": null_function(name="display_settings.simple.warn"),
             "err": null_function(name="display_settings.simple.err"),
             "fatal": null_function(name="display_settings.simple.fatal"),
@@ -169,8 +180,8 @@ def load_plugin() -> Dict[str, Any]:
     macros = {}
 
     config = {
-        "root_plugin": plugin_data,
-        "breadbox": breadbox_path,
+        'plugins': {"root": plugin_data},
+        "breadbox": breadbox,
         "display": display_settings,
         "hooks": hooks,
         'commands': commands,
@@ -188,6 +199,70 @@ def load_plugin() -> Dict[str, Any]:
 
     return config
 
+directory["root"] = load_plugin
+
+def recurse_plugins(config_array: List[Dict[str, Any]], plugin: str) -> None:
+    """
+    Recursively searches and loads each found config to the config_array.
+
+    :param config_array: Collection of loaded plugins.
+    :param plugin: Ether a path to find the plugin file or a name in the plugin
+    directory.
+    """
+    plug_location = directory.get(plugin, None)
+    print(plugin)
+    if (plug_location is None):
+        try:
+            plug_path = Path(plugin)
+            spec = importlib.util.spec_from_file_location(plugin, plug_path)
+            tmp = importlib.util.module_from_spec(spec)
+            sys.modules[plugin] = tmp
+            spec.loader.exec_module(tmp)
+            ret = tmp.load_plugin()
+        except Exception as e:
+            return
+    else:
+        ret = plug_location()
+    config_array.append(ret)
+    imports = ret['plugins'][plugin]["imports"]
+    for x in imports:
+        recurse_plugins(config_array, x)
+
+def merge_config(a: Dict[str, Any], b: Dict[str, Any]) -> None:
+    """
+    Merges two dictionaries nix style, recursively. Dictionaries will be recursed
+    and lists will be appended. Everything else is sourced from a or b. Preference
+    is given to a. Elements will be taken from b and put in a.
+
+    :param a: The (overriding) dict.
+    :param b: The other dict.
+    """
+    for k, v in a.items():
+        if (k in b.keys()):
+            if (isinstance(b[k], type(v))):
+                if (isinstance(b[k], dict)):
+                    merge_config(a[k], b[k])
+                elif (isinstance(b[k], list)):
+                    a[k] += b[k]
+                else:
+                    a[k] = b[k]
+            else:
+                a[k] = b[k]
+    for k, v in b.items():
+        if (k not in a.keys()):
+            a[k] = v
 
 
+def collect_config() -> Dict[str, Any]:
+    """
+    Starting from the root plugin, collects all plugins and returns the final
+    config.
+    """
+    config_array = list()
+    recurse_plugins(config_array, "root")
+    final_conf = config_array[0]
+    for c in config_array[1:]:
+        merge_config(final_conf, c)
+    print(final_conf)
+    return final_conf
 

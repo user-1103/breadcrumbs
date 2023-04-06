@@ -1,5 +1,5 @@
 """
-Module for displaying the data.
+Module for displaying data in a nice way.
 """
 
 from re import sub

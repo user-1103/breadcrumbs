@@ -2,19 +2,44 @@
 Module that orchestrates the other modules.
 """
 from argparse import ArgumentParser, Namespace
+from pathlib import Path
+from re import Match, search, sub
 from signal import SIGINT, signal
 from sys import exit
+from typing import Dict, Union, Any
 
-from breadcrumbs.display import SIMPLE, DEBUG, clear, debug, info, prompt
-from breadcrumbs.loaf import init_loaf, parse, call_hooks
-from breadcrumbs.config import HookTypes
+from pytodotxt import TodoTxt
+
+from breadcrumbs.root_plugin import collect_config
+from breadcrumbs.utils import save
+import readline
+
+# The global config state
+CONFIG: Union[None, Dict[str, Any]] = None
+# The current load being managed
+LOAF: Union[None, TodoTxt] = None
+
+def call_hooks(hook: str) -> None:
+    """
+    Calls all hooks registered with a given name.
+
+    :args hook: The type of the hook to call.
+    """
+    h = CONFIG["hooks"].get(hook, None)
+    if (not h):
+        return
+    CONFIG['log']['debug'](f"Calling internal hook {hook}.")
+    for hook_call in h:
+        CONFIG['log']['debug'](f"Calling {hook_call.__name__}")
+        hook_call(CONFIG, LOAF)
 
 def on_exit(signum, stack) -> None:
     """
     Calls the redigested EXIT hooks on kill signal.
     """
-    info(" Mañana")
-    call_hooks(HookTypes.EXIT)
+    CONFIG['log']['fatal'](" Mañana")
+    call_hooks("SAFEEXIT")
+    call_hooks("EXIT")
     exit(0)
 
 def parse_cli_args() -> Namespace:
@@ -41,32 +66,109 @@ def parse_cli_args() -> Namespace:
     args = parser.parse_args()
     return args
 
+def init_loaf() -> None:
+    """
+    Sets up the global LOAF and CONFIG vars so they may be used.
+    MUST BE CALLED BEFORE LOAF  / CONFIG USAGE!
+    """
+    global LOAF, CONFIG
+    CONFIG = collect_config()
+    loaf = TodoTxt(Path(CONFIG["breadbox"] + "/default.loaf"))
+    loaf.parse()
+    CONFIG["buffers"]["loaf"] = loaf
+    LOAF = loaf
+
+def expand_macros(user_input: str) -> str:
+    """
+    Expands macros in the input text.
+
+    :param user_input: The unprocessed user input.
+    :return: The user_input with expanded macros.
+    """
+    for name, (before, after) in CONFIG["macros"].items():
+        user_input = sub(before, after, user_input)
+    return user_input
+
+def parse(user_input: str) -> None:
+    """
+    Takes a breadcrumb command and processes it.
+
+    :param user_input: The unprocessed user input.
+    """
+    if (not user_input):
+        return
+    debug = CONFIG['log']['debug']
+    err = CONFIG['log']['err']
+    buffers = CONFIG['buffers']
+    debug("STAGE 0 (RAW TEXT):")
+    debug(user_input)
+    buffers["input_raw"] = user_input
+    call_hooks('PREMACRO')
+    user_input = buffers["input_raw"]
+    debug("STAGE 1 (POST PREMACRO):")
+    debug(user_input)
+    user_input = expand_macros(user_input)
+    buffers["input_post_macro"] = user_input
+    debug("STAGE 2 (POST MACRO):")
+    debug(user_input)
+    args: Union[None, Match] = None
+    for reg, possible_cmd in CONFIG["commands"].items():
+        reg = (r'^\?' + reg + r'((?:\s.*)|(?:$))')
+        args = search(reg, user_input)
+        if (args):
+            buffers["cmd"] = possible_cmd
+            buffers["args"] = args
+            break
+    call_hooks('PRECMD')
+    do_save = False
+    try:
+        if (args):
+            cmd = buffers["cmd"]
+            args = buffers["args"]
+            debug("STAGE 4 (POST CMD SEARCH):")
+            debug(cmd)
+            debug("STAGE 5 (POST PRE):")
+            debug(args.groups())
+            tmp_arg = args.groups()[0]
+            if (tmp_arg.startswith(" ") and (len(tmp_arg) >= 2)):
+                trim_arg = tmp_arg[1:]
+            else:
+                trim_arg = tmp_arg
+            do_save = cmd(CONFIG, LOAF, trim_arg)
+        else:
+            if (user_input.startswith("?")):
+                CONFIG['default_command'](CONFIG, LOAF, user_input)
+            elif (len(user_input)):
+                CONFIG['null_command'](CONFIG, LOAF, user_input)
+    except Exception as e:
+        buffers["err"] =  e
+        call_hooks('CMDERR')
+        err("Failed To Run Command.", e)
+    else:
+        call_hooks('CMDOK')
+    call_hooks('POSTCMD')
+    if (do_save):
+        save(LOAF)
+
 def run() -> None:
     """
     Loads a loaf in a cli, and allows the user to modify it.
     """
-    global DEBUG, SIMPLE
     signal(SIGINT, on_exit)
     args = parse_cli_args()
     init_loaf()
-    debug("Parsed args, loaded Loaf, and registered signals.")
-    # TODO should these be moved into the loaf config?
-    if (args.simple):
-        SIMPLE = True
-    if (args.debug):
-        DEBUG = True
-    call_hooks(HookTypes.INIT)
+    call_hooks("INIT")
     if (args.crumb_command):
         parse(args.crumb_command)
     else:
         repl()
-    call_hooks(HookTypes.EXIT)
+    on_exit(None, None)
 
 def repl() -> None:
     """
     Runs a repl to manage the crumbs.
     """
-    clear()
+    CONFIG['log']['clear']()
     while True:
-        tmp = prompt()
+        tmp = CONFIG['log']['prompt']()
         parse(tmp)
