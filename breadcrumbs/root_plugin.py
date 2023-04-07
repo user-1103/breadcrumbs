@@ -87,7 +87,7 @@ def load_plugin() -> Dict[str, Any]:
         "website": "https://github.com/user-1103/breadcrumbs",
         "version": "0.1",
         "description": "The root plugin.",
-        "imports": ['display', 'core'],
+        "imports": ['display', 'core', 'future', 'metrics', 'default_macros'],
         "lib": {},
         "help": {
             "usage": ("If you are reading this, you are already using this"
