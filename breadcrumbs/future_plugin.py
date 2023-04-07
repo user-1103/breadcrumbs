@@ -51,6 +51,8 @@ def check_future(conf: Dict[str, Any], loaf: TodoTxt, date_str: str, cmd: bool =
             t = Table(title=f"Future Casts For {span_text}")
             t.add_column("Cast Date")
             t.add_column("Crumb Info")
+            if (not res):
+                return
             for x in res:
                 date_txt = x.attributes["FUTURE"]
                 des = x.description
