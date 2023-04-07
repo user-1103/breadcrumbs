@@ -137,9 +137,9 @@ def parse(user_input: str) -> None:
             do_save = cmd(CONFIG, LOAF, trim_arg)
         else:
             if (user_input.startswith("?")):
-                CONFIG['default_command'](CONFIG, LOAF, user_input)
+                 do_save = CONFIG['default_command'](CONFIG, LOAF, user_input)
             elif (len(user_input)):
-                CONFIG['null_command'](CONFIG, LOAF, user_input)
+                do_save = CONFIG['null_command'](CONFIG, LOAF, user_input)
     except Exception as e:
         buffers["err"] =  e
         call_hooks('CMDERR')
