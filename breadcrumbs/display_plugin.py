@@ -11,28 +11,14 @@ from rich.align import Align
 from rich.panel import Panel
 from rich.table import Table
 
-
-from breadcrumbs.lexer import TodotxtLexer
-from rich.syntax import Syntax
 from rich.console import Console, RenderableType
 
-# The lexer to use for crumbs
-lex = TodotxtLexer()
+from breadcrumbs.utils import easy_lex
+
 # The rich console to use
 console = Console()
 # Is a json list being printed
 is_json_list = False
-
-def easy_lex(text: Any) -> Syntax:
-    """
-    Wrap text in a syntax block.
-
-    :param text: the text to wrap.
-    :return: the wrapped object.
-    """
-    tmp = Syntax(str(text), lexer=lex, word_wrap = True,
-                               theme="ansi_light")
-    return tmp
 
 def log(text: Any) -> None:
     """
@@ -354,7 +340,7 @@ def load_plugin() -> Dict[str, Any]:
             "fatal": lambda x: simple_log(x, ltype=LogType.FATAL),
             "clear": lambda : simple_log(ltype=LogType.CLEAR),
             "title": lambda x: simple_log(x, ltype=LogType.TITLE),
-            "prompt": lambda x: input(f" {x} > ")
+            "prompt": input
         },
         }
 

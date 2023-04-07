@@ -8,7 +8,7 @@ from typing import Dict, Any
 
 from pytodotxt import Task, TodoTxt
 from rich.table import Table
-from breadcrumbs.utils import add_task, archive, loaf_search, unarchive, get_buffer, set_buffer
+from breadcrumbs.utils import add_task, archive, easy_lex, loaf_search, unarchive, get_buffer, set_buffer
 
 
 def print_buffer_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -79,7 +79,7 @@ def block_add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
               caption="(Type END to finish block edit)")
     t.add_column("Prefix")
     t.add_column("Postfix")
-    t.add_row(prefix_str, postfix_str)
+    t.add_row(easy_lex(prefix_str), easy_lex(postfix_str))
     conf["log"]["title"]("BLOCK EDIT")
     conf["log"]["figure"](t)
     add_text = ""
@@ -134,12 +134,13 @@ def macro_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     - Prints all registered macros.
     - Never saves.
     """
+    # TODO add lexer for regex
     conf["log"]["clear"]()
     conf["log"]["title"]("MACRO INFO")
     t = Table(title="Macro Commands.")
     t.add_column("Name")
     t.add_column("Before Regex...")
-    t.add_column("What Happens...")
+    t.add_column("After Regex...")
     for k, v in conf["macros"].items():
         t.add_row(f"{k}", v[0], v[1])
     conf["log"]["figure"](t)
@@ -276,13 +277,13 @@ def substitute_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     res = get_buffer(conf)
     conf["log"]["clear"]()
     conf["log"]["title"]("SUBSITUTE")
-    t = Table("Changes")
+    t = Table(title="Changes")
     t.add_column("Before")
     t.add_column("After")
     for x in res:
         tmp = x.description
-        sub(before_regex, after_regex, x.description)
-        t.add_row(tmp, x.description)
+        x.description = sub(before_regex, after_regex, tmp)
+        t.add_row(easy_lex(tmp), easy_lex(x.description))
     conf["log"]["figure"](t)
     return True
 
