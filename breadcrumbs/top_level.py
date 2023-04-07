@@ -58,6 +58,8 @@ def parse_cli_args() -> Namespace:
                     help='Be chatty...')
     parser.add_argument('-s', "--simple", action="store_true",
                     help='Be less fancy when printing...')
+    parser.add_argument('-j', "--json", action="store_true",
+                    help='Talk json to me...')
     parser.add_argument('crumb_command',
                         metavar='[C]',
                         nargs='?',
@@ -65,6 +67,20 @@ def parse_cli_args() -> Namespace:
                         help='The crumb command to run.')
     args = parser.parse_args()
     return args
+
+def merge_cli_config(conf: Dict[str, Any], cli: Namespace) -> None:
+    """
+    Modify the final config with the given cli arguments.
+
+    :param conf: The final config.
+    :param cli: The parsed arg namespace.
+    """
+    if (cli.debug):
+        conf['log'] = conf['display']['debug']
+    if (cli.simple):
+        conf['log'] = conf['display']['simple']
+    if (cli.json):
+        conf['log'] = conf['display']['json']
 
 def init_loaf() -> None:
     """
@@ -158,6 +174,7 @@ def run() -> None:
     args = parse_cli_args()
     init_loaf()
     call_hooks("INIT")
+    merge_cli_config(CONFIG, args)
     if (args.crumb_command):
         parse(args.crumb_command)
     else:

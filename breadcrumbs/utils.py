@@ -11,6 +11,10 @@ from copy import deepcopy
 from pytodotxt import Task, TodoTxt
 import time as old_time
 
+from rich.syntax import Syntax
+
+from breadcrumbs.lexer import TodotxtLexer
+
 def span_to_delta(ts: str) -> timedelta:
     """
     Takes a span and returns an equivalent time delta.
@@ -235,8 +239,10 @@ def archive(task_list: List[Task]) -> None:
     :param task_list: A list of tasks to archive.
     """
     for task in task_list:
+        if (task.is_completed):
+            continue
         dt = datetime.now().time().isoformat("minutes")
-        dt.replace(":", "-")
+        dt = dt.replace(":", "-")
         task.add_attribute("ATIME", dt)
         task.is_completed = True
 
@@ -247,6 +253,8 @@ def unarchive(task_list: List[Task]) -> None:
     :param task_list: A list of tasks to de-archive.
     """
     for task in task_list:
+        if (not task.is_completed):
+            continue
         task.remove_attribute("ATIME")
         task.is_completed = False
 
@@ -312,3 +320,16 @@ def set_buffer(conf: Dict[str, Any], data: List[Task]) -> None:
     """
     conf["buffers"]["selection_buffer"] = data
     conf["buffers"]["selection_buffer_exp"] = (old_time.time() + 30)
+
+
+def easy_lex(text: Any) -> Syntax:
+    """
+    Wrap text in a syntax block.
+
+    :param text: the text to wrap.
+    :return: the wrapped object.
+    """
+    tmp = Syntax(str(text), lexer=TodotxtLexer(), word_wrap = True,
+                               theme="ansi_light")
+    return tmp
+

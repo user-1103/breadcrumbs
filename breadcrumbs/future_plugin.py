@@ -9,7 +9,7 @@ from time import time
 from pytodotxt import Task, TodoTxt
 from rich.table import Table
 
-from breadcrumbs.utils import loaf_search, order_by_date, set_buffer, task_to_make_date
+from breadcrumbs.utils import easy_lex, loaf_search, order_by_date, set_buffer, task_to_make_date
 
 
 def check_future(conf: Dict[str, Any], loaf: TodoTxt, date_str: str, cmd: bool = False) -> None:
@@ -56,7 +56,7 @@ def check_future(conf: Dict[str, Any], loaf: TodoTxt, date_str: str, cmd: bool =
                 des = x.description
                 if (not des):
                     des = "<empty>"
-                t.add_row(date_txt[0], des)
+                t.add_row(date_txt[0], easy_lex(des))
             conf['log']['figure'](t)
 
 def check_future_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:

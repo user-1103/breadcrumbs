@@ -5,7 +5,7 @@ The current bastard plugin.
 """
 from typing import Dict, Any
 
-from breadcrumbs.matrics_plugin import run_total, span, total_table
+from breadcrumbs.metrics_plugin import run_total, span, total_table
 
 def load_plugin() -> Dict[str, Any]:
     """
