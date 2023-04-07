@@ -39,7 +39,7 @@ def load_plugin() -> Dict[str, Any]:
         # Not actual defaults
         "Easy Cost Metric": (r'\.\.c\s(\S*)\s(\S*)', r'cost:\1/\2'),
         "Easy Track Metric": (r'\.\.t\s(\S*)', r'track:\1'),
-        "Easy Mood Metric": (r'\.\.t\m(\S*)', r'mood:\1'),
+        "Easy Mood Metric": (r'\.\.m\s(\S*)', r'mood:\1'),
     }
 
     config = {
@@ -48,9 +48,9 @@ def load_plugin() -> Dict[str, Any]:
             'metrics': {
                 'lib': {
                     'metrics': [
-                        (span,        "TRACK",        {},         True),
-                        (span,        "MOOD",         {},         True),
-                        (run_total,   "COST",         {},         True),
+                        (span,        "track",        {},         True),
+                        (span,        "mood",         {},         True),
+                        (run_total,   "cost",         {},         True),
                         (total_table, "brush",        {},         True),
                         (total_table, "floss",        {},         True),
                         (total_table, "mwash",        {},         True),

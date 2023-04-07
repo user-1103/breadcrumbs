@@ -141,7 +141,7 @@ def macro_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     t.add_column("Before Regex...")
     t.add_column("What Happens...")
     for k, v in conf["macros"].items():
-        t.add_row(f"{k}", v[0]. v[1])
+        t.add_row(f"{k}", v[0], v[1])
     conf["log"]["figure"](t)
     return False
 
@@ -316,7 +316,7 @@ def load_plugin() -> Dict[str, Any]:
         "b": block_add_cmd,
         "nop": nop_cmd,
         "ic": command_info_cmd,
-        "im": macro_info_cmd,
+        "io": macro_info_cmd,
         "ih": hooks_info_cmd,
         "a": archive_cmd,
         "A": unarchive_cmd,

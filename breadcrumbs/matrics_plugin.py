@@ -30,8 +30,8 @@ def span(loaf, tag: str, opt: Dict[str, Any]) -> Union[List[RenderableType], Non
       under the <category> tag. If END or a date string, special procedures
       will be taken. (?h metrics/span).
     """
-    time_str = opt.get("time_str", "1d-~")
-    rec = loaf_search(loaf, time_str=time_str,
+    span = opt.get("span", "1d-~")
+    rec = loaf_search(loaf, span=span,
                       regex_str=(tag + r':\w*'), archived=False)
     tmp = list()
     for x in rec:
@@ -95,8 +95,8 @@ def total_table(loaf, tag: str, opt: Dict[str, Any]) -> Union[List[str], None]:
     - <tag>:<float> -> A value to record for that day. Multiple values in the
       day are summed.
     """
-    time_str = opt.get("time_str", "40d-~")
-    rec = loaf_search(loaf, time_str=time_str, archived=False,
+    span = opt.get("span", "40d-~")
+    rec = loaf_search(loaf, span=span, archived=False,
                       regex_str=(tag + r':\w*'))
     tmp = list()
     for x in rec:
@@ -110,7 +110,7 @@ def total_table(loaf, tag: str, opt: Dict[str, Any]) -> Union[List[str], None]:
         METRICS_CACHE[tag] = tmp
     ret = list()
     value_data = [(y, x) for x, y in tmp]
-    ret.append(make_value_table(value_data, f"Record of {tag} over {time_str}", opt))
+    ret.append(make_value_table(value_data, f"Record of {tag} over {span}", opt))
     return(ret)
 
 def make_time_table(data: List[Tuple[str, datetime, datetime]]) -> RenderableType:
@@ -257,7 +257,7 @@ def make_value_table(data: List[Tuple[datetime, float]],
             print_data.append((day_count.isoformat(), "∅"))
         else:
             print_data.append((day_count.isoformat(), str(value)))
-            tmp_days.remove(day_count)
+        tmp_days.remove(day_count)
         day_count += timedelta(days=1)
     rows  = list()
     tmp = list()
@@ -290,7 +290,7 @@ def metrics_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     for c in tmp:
         t.add_row(c[1], c[0].__name__)
     conf['log']['clear']()
-    conf['log']['TITLE']('METRICS INFO')
+    conf['log']['title']('METRICS INFO')
     conf['log']['figure'](t)
     return False
 
@@ -356,7 +356,7 @@ def collect_metrics(conf: Dict[str, Any], loaf: TodoTxt, tag: Union[None, str] =
             else:
                 continue
         except Exception as e:
-            conf['log']['err'](e)
+            conf['log']['err']("Could not collect metric", e)
             continue
         if (tmp_print is None):
             continue
@@ -368,7 +368,7 @@ def collect_metrics(conf: Dict[str, Any], loaf: TodoTxt, tag: Union[None, str] =
                 conf['log']['figure'](x)
         else:
             conf['log']['clear']()
-            conf['log']['TITLE']('METRICS')
+            conf['log']['title']('METRICS')
             for x in print_data:
                 conf['log']['figure'](x)
 
@@ -386,7 +386,7 @@ def load_plugin() -> Dict[str, Any]:
         "author": "USER 1103",
         "website": "https://github.com/user-1103/breadcrumbs",
         "version": "0.1",
-        "description": "An example plugin",
+        "description": "Adds metrics and graphs.",
         "imports": [],
         "lib": {
             'metrics': [
