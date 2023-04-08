@@ -18,6 +18,7 @@ cowsay = "^5.0"
 text2emotion = "^0.0.5"
 better-profanity = "^0.7.0"
 emoji = "1.6.3"
+deep-translator = "^1.10.1"
 
 [tool.poetry.scripts]
 breadcrumbs = "breadcrumbs:main"

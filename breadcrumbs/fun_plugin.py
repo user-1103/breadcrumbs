@@ -2,7 +2,7 @@
 Defines a some fun addins in a plugin for the breadcrumbs system.
 """
 from itertools import filterfalse
-from typing import Dict, Any
+from typing import Dict, Any, Union
 import holidays
 
 from pytodotxt import Task, TodoTxt
@@ -15,18 +15,44 @@ from text2emotion import get_emotion
 from better_profanity import profanity
 from time import time
 from rich._emoji_codes import EMOJI
+from deep_translator import MyMemoryTranslator
 
 from breadcrumbs.utils import add_task
 from breadcrumbs.metrics_plugin import run_total
 
+# List of us holidays TODO make this more international
 holidays = USA()
+# List of fellas to say stuff
 fellas = list(chars.keys())
+# The translator object.
+trans: Union[MyMemoryTranslator, None] = None
+
+def init_translator_hook(conf: Dict[str, Any], loaf: TodoTxt) -> None:
+    """
+    Sets up the translator used by lang_learn.
+    """
+    global trans
+    start_lang = conf['plugins']['fun']['lib']['home_lang']
+    end_lang = conf['plugins']['fun']['lib']['guest_lang']
+    trans = MyMemoryTranslator(source=start_lang, target=end_lang)
 
 def silly_toast_hook(conf: Dict[str, Any], loaf: TodoTxt) -> None:
     """
     Makes a silly toast. Sometimes.
     """
     silly_toast(conf, loaf)
+
+def lang_learn(conf: Dict[str, Any], loaf: TodoTxt, last_crumb: Task) -> None:
+    """
+    Learn a language in your own words.
+
+    :param conf: The final conf.
+    :param loaf: The loaf.
+    :param last_crumb: The last crumb.
+    """
+    tmp = trans.translate(text=last_crumb.bare_description())
+    conf['log']['info'](f"{tmp} :globe_showing_europe-africa:.")
+
 
 def swear_jar(conf: Dict[str, Any], loaf: TodoTxt, last_crumb_str: str) -> None:
     """
@@ -146,6 +172,7 @@ def silly_toast_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     facts_and_logic(conf, loaf, last_crumb_str)
     wise_words_of_the_past(conf, loaf, last_crumb)
     auto_emote(conf, loaf, last_crumb_str)
+    lang_learn(conf, loaf, last_crumb)
     return False
 
 def silly_toast(conf: Dict[str, Any], loaf: TodoTxt) -> None:
@@ -169,6 +196,8 @@ def silly_toast(conf: Dict[str, Any], loaf: TodoTxt) -> None:
         auto_emote(conf, loaf, last_crumb_str)
     if (not randint(0, 100)):
         wise_words_of_the_past(conf, loaf, last_crumb)
+    if (not randint(0, 10)):
+        lang_learn(conf, loaf, last_crumb)
 
 def load_plugin() -> Dict[str, Any]:
     """
@@ -186,7 +215,10 @@ def load_plugin() -> Dict[str, Any]:
         "version": "0.1",
         "description": "A plugin of shenanigans.",
         "imports": [],
-        "lib": {},
+        "lib": {
+            "home_lang": 'en',
+            "guest_lang": 'es',
+        },
         "help": {
             "usage": ("If you are reading this, you are already using this"
                       " plugin")
@@ -194,7 +226,7 @@ def load_plugin() -> Dict[str, Any]:
     }
 
     hooks = {
-        "INIT": [],
+        "INIT": [init_translator_hook],
         "MOTD": [],
         "PREMACRO": [],
         "PRECMD": [],
