@@ -80,6 +80,8 @@ def load_plugin() -> Dict[str, Any]:
     hooks = {
         # Called  after final config is loaded
         "INIT": ["some_function(Dict[str,Any], TodoTxt) -> bool"],
+        # Called just after the user is dropped into a repl
+        "MOTD": [],
         # Called before macro expantion
         "PREMACRO": [],
         # Called before running the command

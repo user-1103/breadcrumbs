@@ -8,6 +8,7 @@ from pathlib import Path
 from os.path import isdir, isfile
 from os import mkdir
 
+from rich.progress import Progress
 from rich import print
 from breadcrumbs.plugin_dir import directory
 import importlib.util
@@ -87,7 +88,8 @@ def load_plugin() -> Dict[str, Any]:
         "website": "https://github.com/user-1103/breadcrumbs",
         "version": "0.1",
         "description": "The root plugin.",
-        "imports": ['display', 'core', 'future', 'metrics', 'default_macros'],
+        "imports": ['display', 'core', 'future',
+                    'metrics', 'default_macros', 'fun'],
         "lib": {},
         "help": {
             "usage": ("If you are reading this, you are already using this"
@@ -148,6 +150,7 @@ def load_plugin() -> Dict[str, Any]:
 
     hooks = {
         "INIT": [],
+        "MOTD": [],
         "PREMACRO": [],
         "PRECMD": [],
         "CMDERR": [],
@@ -201,32 +204,40 @@ def load_plugin() -> Dict[str, Any]:
 
 directory["root"] = load_plugin
 
-def recurse_plugins(config_array: List[Dict[str, Any]], plugin: str) -> None:
+def recurse_plugins(config_array: List[Dict[str, Any]], plugin: str,
+                    p: Progress) -> None:
     """
     Recursively searches and loads each found config to the config_array.
 
     :param config_array: Collection of loaded plugins.
     :param plugin: Ether a path to find the plugin file or a name in the plugin
     directory.
+    :param p: The progress display object.
     """
+    t2 = p.add_task(f" ⮡ Loading Plugin: [bold]{plugin}[/bold].", total=100)
     plug_location = directory.get(plugin, None)
-    print(plugin)
     if (plug_location is None):
-        try:
-            plug_path = Path(plugin)
-            spec = importlib.util.spec_from_file_location(plugin, plug_path)
-            tmp = importlib.util.module_from_spec(spec)
-            sys.modules[plugin] = tmp
-            spec.loader.exec_module(tmp)
-            ret = tmp.load_plugin()
-        except Exception as e:
-            return
+        plug_path = Path(plugin)
+        spec = importlib.util.spec_from_file_location(plugin, plug_path)
+        tmp = importlib.util.module_from_spec(spec)
+        sys.modules[plugin] = tmp
+        spec.loader.exec_module(tmp)
+        ret = tmp.load_plugin()
+        p.advance(t2, 20)
     else:
         ret = plug_location()
+        p.advance(t2, 20)
     config_array.append(ret)
     imports = ret['plugins'][plugin]["imports"]
+    if (imports):
+        t2_left = (100-20)/len(imports)
+    else:
+        t2_left = (100-20)
+        p.advance(t2, t2_left)
     for x in imports:
-        recurse_plugins(config_array, x)
+        recurse_plugins(config_array, x, p)
+        p.advance(t2, t2_left)
+    p.update(t2, description=f" ⮡ Loaded Plugin: [bold]{plugin}[/bold].")
 
 def merge_config(a: Dict[str, Any], b: Dict[str, Any]) -> None:
     """
@@ -253,16 +264,26 @@ def merge_config(a: Dict[str, Any], b: Dict[str, Any]) -> None:
             a[k] = v
 
 
-def collect_config() -> Dict[str, Any]:
+def collect_config(p: Progress) -> Dict[str, Any]:
     """
     Starting from the root plugin, collects all plugins and returns the final
     config.
+
+    :param p: The progress display object.
     """
+    t3 = p.add_task("⮡ Loading Config.", total=100)
     config_array = list()
-    recurse_plugins(config_array, "root")
+    recurse_plugins(config_array, "root", p)
+    p.advance(t3, 20)
     final_conf = config_array[0]
+    if (config_array):
+        t3_left = (100-20)/len(config_array[1:])
+    else:
+        t3_left = (100-20)
+        p.advance(t3, t3_left)
     for c in config_array[1:]:
         merge_config(final_conf, c)
-    print(final_conf)
+        p.advance(t3, t3_left)
+    p.update(t3, description="⮡ Loaded Config.")
     return final_conf
 

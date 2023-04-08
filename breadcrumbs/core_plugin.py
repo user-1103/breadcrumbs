@@ -142,7 +142,11 @@ def macro_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     t.add_column("Before Regex...")
     t.add_column("After Regex...")
     for k, v in conf["macros"].items():
-        t.add_row(f"{k}", v[0], v[1])
+        if (isinstance(v, tuple)):
+            t.add_row(f"{k}", v[0], v[1])
+        else:
+            tmp = v.__doc__.splitlines()
+            t.add_row(f"{k}", tmp[1], tmp[2])
     conf["log"]["figure"](t)
     return False
 

@@ -26,7 +26,7 @@ def check_future(conf: Dict[str, Any], loaf: TodoTxt, date_str: str, cmd: bool =
         if (tmp is None):
             return True
         t_time = task_to_make_date(x, d_tag="FUTURE")
-        if (t_time > max_time):
+        if (t_time >= max_time):
             return True
         return False
     res = loaf_search(loaf, archived=False)

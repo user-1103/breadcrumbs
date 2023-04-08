@@ -150,11 +150,13 @@ def get_time_spans(data: List[Tuple[str, datetime]]) -> List[Tuple[str, datetime
     names = names[:-1]
     ret = list()
     for name, p in zip(names, pairs):
-        if ((name == "0") and (len(ret))):
+        if ((name == "END") and (len(ret))):
                 ret.pop()
         else:
             try:
-                reset_time = datetime.fromisoformat(name)
+                year, month, day, hour, minutes = name.split("-")
+                reset_time = datetime(year=int(year), month=int(month),
+                                      day=int(day), hour=int(hour), minute=int(minutes))
                 old = ret.pop()
                 new = (old[0], old[1], reset_time)
                 ret.append(new)
@@ -218,7 +220,6 @@ def make_running_total(data: List[Tuple[datetime, float]],
         if (t >= lower_limit):
             times.append(pt.datetime_to_string(t))
             values.append(running_total)
-
     pt.clf()
     pt.limit_size(True, True)
     pt.plot_size((pt.tw() // 2), (pt.th() // 3))

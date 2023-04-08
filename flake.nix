@@ -20,6 +20,18 @@
                     buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
                   }
                 );
+              cowsay = super.cowsay.overridePythonAttrs
+                (
+                  old: {
+                    buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
+                  }
+                );
+              alt-profanity-check = super.alt-profanity-check.overridePythonAttrs
+                (
+                  old: {
+                    buildInputs = (old.buildInputs or [ ]) ++ [ super.setuptools ];
+                  }
+                );
             });
         };
       });

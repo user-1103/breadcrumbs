@@ -12,6 +12,12 @@ pytodotxt = "^1.4.3"
 rich = "^13.3.2"
 pygments = "^2.14.0"
 plotext = "^5.2.8"
+holidays = "^0.22"
+randfacts = "^0.20.1"
+cowsay = "^5.0"
+text2emotion = "^0.0.5"
+better-profanity = "^0.7.0"
+emoji = "1.6.3"
 
 [tool.poetry.scripts]
 breadcrumbs = "breadcrumbs:main"

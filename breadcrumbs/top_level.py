@@ -6,9 +6,11 @@ from pathlib import Path
 from re import Match, search, sub
 from signal import SIGINT, signal
 from sys import exit
+from time import sleep
 from typing import Dict, Union, Any
 
 from pytodotxt import TodoTxt
+from rich.progress import Progress, TaskID
 
 from breadcrumbs.root_plugin import collect_config
 from breadcrumbs.utils import save
@@ -82,14 +84,22 @@ def merge_cli_config(conf: Dict[str, Any], cli: Namespace) -> None:
     if (cli.json):
         conf['log'] = conf['display']['json']
 
-def init_loaf() -> None:
+def init_loaf(p: Progress, t1: TaskID) -> None:
     """
     Sets up the global LOAF and CONFIG vars so they may be used.
     MUST BE CALLED BEFORE LOAF  / CONFIG USAGE!
+
+    :param p: The progress display object.
+    :param t1: The task id of the top level.
     """
     global LOAF, CONFIG
-    CONFIG = collect_config()
-    loaf = TodoTxt(Path(CONFIG["breadbox"] + "/default.loaf"))
+    p.advance(t1, 20)
+    p.update(t1, description="Collecting Config.")
+    CONFIG = collect_config(p)
+    loaf_path = Path(CONFIG["breadbox"] + "/default.loaf")
+    p.advance(t1, 20)
+    p.update(t1, description=f"Loading Loaf From {loaf_path}.")
+    loaf = TodoTxt(loaf_path)
     loaf.parse()
     CONFIG["buffers"]["loaf"] = loaf
     LOAF = loaf
@@ -101,8 +111,12 @@ def expand_macros(user_input: str) -> str:
     :param user_input: The unprocessed user input.
     :return: The user_input with expanded macros.
     """
-    for name, (before, after) in CONFIG["macros"].items():
-        user_input = sub(before, after, user_input)
+    for name, v in CONFIG["macros"].items():
+        if (isinstance(v, tuple)):
+            before, after = v
+            user_input = sub(before, after, user_input)
+        else:
+            user_input = v(user_input)
     return user_input
 
 def parse(user_input: str) -> None:
@@ -166,15 +180,32 @@ def parse(user_input: str) -> None:
     if (do_save):
         save(LOAF)
 
+def check_if_normal(cli: Namespace) -> bool:
+    """
+    Checks to see if it would be appropriate to display loading bars.
+
+    :param cli: The parsed cli args.
+    :return: bool to check if display of bars should be false.
+    """
+    return ((cli.debug or cli.simple or cli.json))
+
 def run() -> None:
     """
     Loads a loaf in a cli, and allows the user to modify it.
     """
     signal(SIGINT, on_exit)
     args = parse_cli_args()
-    init_loaf()
-    call_hooks("INIT")
-    merge_cli_config(CONFIG, args)
+    with Progress(disable=check_if_normal(args), expand=True) as p:
+        t1 =  p.add_task("Baking Loaf.", total=100)
+        init_loaf(p, t1)
+        p.advance(t1, 20)
+        p.update(t1, description=f"Calling INIT Hooks.")
+        call_hooks("INIT")
+        p.advance(t1, 20)
+        p.update(t1, description=f"[cyan]Applying CLI Arguments.")
+        merge_cli_config(CONFIG, args)
+        p.advance(t1, 20)
+        p.update(t1, description=f"Dusting Off Crumbs.")
     if (args.crumb_command):
         parse(args.crumb_command)
     else:
@@ -186,6 +217,7 @@ def repl() -> None:
     Runs a repl to manage the crumbs.
     """
     CONFIG['log']['clear']()
+    call_hooks("MOTD")
     while True:
         tmp = CONFIG['log']['prompt']()
         parse(tmp)
