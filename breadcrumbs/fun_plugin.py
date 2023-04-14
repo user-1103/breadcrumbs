@@ -51,6 +51,8 @@ def lang_learn(conf: Dict[str, Any], loaf: TodoTxt, last_crumb: Task) -> None:
     :param last_crumb: The last crumb.
     """
     tmp = trans.translate(text=last_crumb.bare_description())
+    if (len(tmp) < 5):
+        return
     conf['log']['info'](f"{tmp} :globe_showing_europe-africa:.")
 
 
@@ -114,6 +116,8 @@ def wise_words_of_the_past(conf: Dict[str, Any], loaf: TodoTxt, last_crumb: Task
     """
     h = len(loaf.tasks)
     tmp = loaf.tasks[randint(0, h)].bare_description()
+    if (len(tmp) < 3):
+        return
     tmp += "\n -- You"
     shuffle(fellas)
     msg = get_output_string(fellas[0], tmp)
@@ -150,8 +154,9 @@ def auto_emote(conf: Dict[str, Any], loaf: TodoTxt, last_crumb_str: str) -> None
     """
     ret = list()
     for k, v in EMOJI.items():
-        if (k.split("_")[0] in last_crumb_str):
-            ret.append(f":{k}:")
+        for tet in  k.split("_"):
+            if ((tet in last_crumb_str) and (len(tet) > 2)):
+                ret.append(f":{k}:")
     if (ret):
         shuffle(ret)
         conf['log']['info'](ret[0])
@@ -192,12 +197,12 @@ def silly_toast(conf: Dict[str, Any], loaf: TodoTxt) -> None:
         party_indicator(conf, loaf, last_crumb)
     if (not randint(0, 10)):
         facts_and_logic(conf, loaf, last_crumb_str)
-    if (not randint(0, 10)):
-        auto_emote(conf, loaf, last_crumb_str)
     if (not randint(0, 100)):
         wise_words_of_the_past(conf, loaf, last_crumb)
     if (not randint(0, 10)):
         lang_learn(conf, loaf, last_crumb)
+    elif (not randint(0, 10)):
+        auto_emote(conf, loaf, last_crumb_str)
 
 def load_plugin() -> Dict[str, Any]:
     """

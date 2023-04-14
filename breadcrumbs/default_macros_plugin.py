@@ -13,11 +13,11 @@ from breadcrumbs.utils import span_to_delta
 
 def today_macro(text: str) -> str:
     """
-    ..now
+    ..today
     <today's date>
     """
     tmp = date.today().isoformat()
-    text = text.replace("..now", tmp)
+    text = text.replace("..today", tmp)
     return text
 
 def delta_macro(text: str) -> str:
@@ -107,6 +107,11 @@ def load_plugin() -> Dict[str, Any]:
                         (total_table, "str",          {},         True),
                         (total_table, "wake",         {},         True),
                         (total_table, "meal",         {},         True),
+                        (total_table, "sensor",       {},         True),
+                        (total_table, "site",         {},         True),
+                        (total_table, "tube",         {},         True),
+                        (total_table, "res",          {},         True),
+                        (total_table, "trans",        {},         True),
                         (total_table, "sleep",        {},         True)
 
                     ]

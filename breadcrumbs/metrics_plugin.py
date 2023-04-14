@@ -10,7 +10,7 @@ from rich.table import Table
 from rich.text import Text
 from breadcrumbs.utils import loaf_search, task_to_make_date
 from re import search
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 import plotext as pt
 from itertools import pairwise
 from pytodotxt import TodoTxt
@@ -191,7 +191,7 @@ def make_cat_ratio(data: List[Tuple[str, float]],
     pt.limit_size(True, True)
     pt.plot_size((pt.tw() // 2), (pt.th() // 3))
     pt.grid(True, False)
-    pt.bar(keys, values)
+    pt.bar(keys, values, orientation="horizontal")
     t = Table(title=title)
     ret = Text.from_ansi(pt.build(), overflow="crop", no_wrap=True, justify="left")
     t.add_column(ret)
@@ -244,6 +244,14 @@ def make_value_table(data: List[Tuple[datetime, float]],
     for d, v in data:
         tmp = days.get(d.date(), 0)
         days[d.date()] = (tmp + v)
+    comp_type = opt.get("good_is_low", False)
+    if (comp_type):
+        hi_color = ("[red]", "[/red]")
+        low_color = ("[green]", "[/green]")
+    else:
+        low_color = ("[red]", "[/red]")
+        hi_color = ("[green]", "[/green]")
+    midpoint = sum(days.values()) // 2
     tmp_days = list(days.keys())
     tmp_days.sort()
     print_data = list()
@@ -258,24 +266,61 @@ def make_value_table(data: List[Tuple[datetime, float]],
             print_data.append((day_count.isoformat(), "∅"))
         else:
             print_data.append((day_count.isoformat(), str(value)))
-        tmp_days.remove(day_count)
+        try:
+            tmp_days.remove(day_count)
+        except Exception as e:
+            # Porbs not the most elegent way to do this
+            ...
         day_count += timedelta(days=1)
     rows  = list()
     tmp = list()
+    streak = 0
     for i, v in enumerate(print_data):
         if ((not (i%7)) and (i != 0)):
             rows.append(tmp)
             tmp = list()
-        tmp.append(f"{v[0]}\n{v[1]}")
+        try:
+            comp = float(v[1])
+        except Exception as e:
+            comp = None
+        if (comp is not None):
+            marks = "\n"
+            goal = opt.get("goal", None)
+            if (v[0] == date.today().isoformat()):
+                marks += ":ten-thirty: "
+            if (goal is not None):
+                if (int(goal) == int(comp)):
+                    marks += ":white_check_mark: "
+                    streak += 1
+                else:
+                    streak = 0
+            fail = opt.get("fail", None)
+            if (fail is not None):
+                if (int(fail) == int(comp)):
+                    marks += ":white_exclamation_mark: "
+            dont_do_streek = opt.get("dont_do_streak", False)
+            if (not dont_do_streek):
+                if (streak >= 3):
+                    marks += ":fast_forward: "
+            if (marks[-1] == " "):
+                marks = marks[:-1]
+            if (comp >= midpoint):
+                tmp.append(f"{v[0][5:]}\n{hi_color[0]}{v[1]}{hi_color[1]}{marks}")
+            else:
+                tmp.append(f"{v[0][5:]}\n{low_color[0]}{v[1]}{low_color[1]}{marks}")
+        else:
+            tmp.append(f"{v[0][5:]}\n{v[1]}\n ")
     rows.append(tmp)
     t = Table(title=title, show_edge=False)
-    t.add_column("🡣 ISO Week Number / Day 🡢 ")
+    # t.add_column("🡣 ISO Week Number / Day 🡢 ")
     for x in range(7):
         day_delta = (timedelta(days=x) + day_start).weekday()
-        t.add_column(WEEKDAYS[day_delta], justify="center")
+        t.add_column(WEEKDAYS[day_delta], justify="center", overflow="fold")
     for i, r in enumerate(rows):
         day_delta = (timedelta(weeks=i) + day_start).isocalendar()[1]
-        t.add_row(*[str(day_delta), *[Align(x, vertical="middle") for x in r]])
+        text_list = [Text.from_markup(x, justify="left",
+                                      overflow="crop") for x in r]
+        t.add_row(*text_list)
     return t
 
 def metrics_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
