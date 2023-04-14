@@ -4,7 +4,7 @@ This plugin consists of establishing the most basic display capabilities.
 
 from enum import Enum, auto
 from json import dumps
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, List
 from pytodotxt import Task, TodoTxt
 from rich.align import Align
 
@@ -12,7 +12,6 @@ from rich.panel import Panel
 from rich.table import Table
 
 from rich.console import Console, RenderableType
-
 from breadcrumbs.utils import easy_lex
 
 # The rich console to use

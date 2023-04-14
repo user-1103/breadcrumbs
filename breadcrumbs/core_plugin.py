@@ -8,7 +8,7 @@ from typing import Dict, Any
 
 from pytodotxt import Task, TodoTxt
 from rich.table import Table
-from breadcrumbs.utils import add_task, archive, easy_lex, loaf_search, unarchive, get_buffer, set_buffer
+from breadcrumbs.utils import add_task, archive, easy_lex, get_contexts, get_projects, get_tags, loaf_search, unarchive, get_buffer, set_buffer
 
 
 def print_buffer_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -111,6 +111,63 @@ def nop_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     """
     conf["log"]["info"]("Use ?ic to list commands")
     return True
+
+def projects_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
+    """
+    - No args.
+    - Prints all known projects.
+    - Never saves.
+    """
+    conf["log"]["clear"]()
+    conf["log"]["title"]("PROJECT INFO")
+    t = Table(title="Known Projects.")
+    t.add_column("Project Name")
+    t.add_column("Count")
+    res = get_projects(loaf)
+    res_list = list(res.items())
+    res_list.sort(key= lambda x: x[1])
+    for k, v in res_list:
+        t.add_row(f"{k}", f"{v}")
+    conf["log"]["figure"](t)
+    return False
+
+def context_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
+    """
+    - No args.
+    - Prints all known contexts.
+    - Never saves.
+    """
+    conf["log"]["clear"]()
+    conf["log"]["title"]("CONTEXTS INFO")
+    t = Table(title="Known Contexts.")
+    t.add_column("Context Name")
+    t.add_column("Count")
+    res = get_contexts(loaf)
+    res_list = list(res.items())
+    res_list.sort(key= lambda x: x[1])
+    for k, v in res_list:
+        t.add_row(f"{k}", f"{v}")
+    conf["log"]["figure"](t)
+    return False
+
+def tag_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
+    """
+    - No args.
+    - Prints all known tags.
+    - Never saves.
+    """
+    conf["log"]["clear"]()
+    conf["log"]["title"]("TAG INFO")
+    t = Table(title="Known Tags.")
+    t.add_column("Tag Name")
+    t.add_column("Count")
+    res = get_tags(loaf)
+    res_list = list(res.items())
+    res_list.sort(key= lambda x: x[1])
+    for k, v in res_list:
+        t.add_row(f"{k}", f"{v}")
+    conf["log"]["figure"](t)
+    return False
 
 def command_info_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     """
@@ -331,6 +388,9 @@ def load_plugin() -> Dict[str, Any]:
         "l": list_cmd,
         "u": undo_cmd,
         "s": substitute_cmd,
+        "ip": projects_info_cmd,
+        "ix": context_info_cmd,
+        "it": tag_info_cmd
     }
 
     config = {

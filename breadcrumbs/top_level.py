@@ -6,20 +6,45 @@ from pathlib import Path
 from re import Match, search, sub
 from signal import SIGINT, signal
 from sys import exit
-from time import sleep
-from typing import Dict, Union, Any
+from time import sleep, time
+from typing import Dict, Union, Any, List
 
 from pytodotxt import TodoTxt
 from rich.progress import Progress, TaskID
 
 from breadcrumbs.root_plugin import collect_config
-from breadcrumbs.utils import save
+from breadcrumbs.utils import get_contexts, get_tags, save, get_projects
 import readline
 
 # The global config state
 CONFIG: Union[None, Dict[str, Any]] = None
 # The current load being managed
 LOAF: Union[None, TodoTxt] = None
+# The last set of recommendations
+last_rec: Union[List[Union[str, None]], None] = None
+# time stamp of last rec update
+last_rec_time: float = time()
+
+readline.parse_and_bind("tab: complete")
+
+def complete(text, state) -> Union[None, str]:
+    """
+    Sets up the readline completer.
+    """
+    global last_rec, last_rec_time
+    if (((last_rec_time + 30) < time()) or (last_rec is None)):
+        last_rec_time = time()
+        last_rec = list(get_tags(LOAF).keys())
+        tmp = [f"{x}" for x in get_projects(LOAF)]
+        last_rec.extend(tmp)
+        tmp = [f"{x}" for x in get_contexts(LOAF)]
+        last_rec.extend(tmp)
+    ret = [x for x in last_rec if (x.startswith(text))]
+    if (not ret):
+        return None
+    else:
+        ret.append(None)
+    return (ret[state] + " ")
 
 def call_hooks(hook: str) -> None:
     """
@@ -216,6 +241,7 @@ def repl() -> None:
     """
     Runs a repl to manage the crumbs.
     """
+    readline.set_completer(complete)
     CONFIG['log']['clear']()
     call_hooks("MOTD")
     while True:

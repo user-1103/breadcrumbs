@@ -188,10 +188,10 @@ def make_cat_ratio(data: List[Tuple[str, float]],
     keys = [x[0] for x in data_tup]
     values = [x[1] for x in data_tup]
     pt.clf()
-    pt.limit_size(True, True)
+    pt.limit_size(True, False)
     pt.plot_size((pt.tw() // 2), (pt.th() // 3))
     pt.grid(True, False)
-    pt.bar(keys, values, orientation="horizontal")
+    pt.simple_bar(keys, values, width=(pt.tw() // 2))
     t = Table(title=title)
     ret = Text.from_ansi(pt.build(), overflow="crop", no_wrap=True, justify="left")
     t.add_column(ret)
@@ -223,7 +223,7 @@ def make_running_total(data: List[Tuple[datetime, float]],
     pt.clf()
     pt.limit_size(True, True)
     pt.plot_size((pt.tw() // 2), (pt.th() // 3))
-    pt.plot(times, values)
+    pt.plot(times, values, marker="braille")
     t = Table(title=title)
     ret = Text.from_ansi(pt.build(), overflow="crop", no_wrap=True, justify="left")
     t.add_column(ret)

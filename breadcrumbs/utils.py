@@ -107,6 +107,9 @@ def parse_span(span: str) -> Tuple[datetime, datetime]:
         try:
             before_d = span_to_delta(before)
             before_t = datetime.now() - before_d
+            if (not (("h" in before) or ("m" in before))):
+                before_t = datetime(before_t.year, before_t.month,
+                                    before_t.day, hour=0, minute=0)
         except Exception as E:
             raise Exception("Invalid range.")
     if (after == "~"):
@@ -231,6 +234,57 @@ def loaf_search(loaf: TodoTxt,
     if (regex_str is not None):
         res = list(filterfalse(filter_regex, res))
     return res
+
+def get_projects(loaf: TodoTxt) -> Dict[str, int]:
+    """
+    Extracts all projects in the loaf.
+
+    :param loaf: The loaf to extract from.
+    :return: A dict keyed by project and values are how many references.
+    """
+    res = loaf_search(loaf, archived=False, regex_str=r"\+\S*\s*")
+    tmp = list()
+    for x in res:
+        if (x.projects is not None):
+            tmp.extend(x.projects)
+    ret = dict()
+    for x in tmp:
+        ret[x] = (ret.get(x, 0) + 1)
+    return ret
+
+def get_contexts(loaf: TodoTxt) -> Dict[str, int]:
+    """
+    Extracts all contexts in the loaf.
+
+    :param loaf: The loaf to extract from.
+    :return: A dict keyed by context and values are how many references.
+    """
+    res = loaf_search(loaf, archived=False, regex_str=r"@\S*\s*")
+    tmp = list()
+    for x in res:
+        if (x.contexts is not None):
+            tmp.extend(x.contexts)
+    ret = dict()
+    for x in tmp:
+        ret[x] = (ret.get(x, 0) + 1)
+    return ret
+
+def get_tags(loaf: TodoTxt) -> Dict[str, int]:
+    """
+    Extracts all tags in the loaf.
+
+    :param loaf: The loaf to extract from.
+    :return: A dict keyed by tag and values are how many references.
+    """
+    res = loaf_search(loaf, archived=False, regex_str=r"\s\S*:\S*\s*")
+    tmp = list()
+    for x in res:
+        if (x.attributes is not None):
+            tmp.extend(x.attributes.keys())
+    ret = dict()
+    for x in tmp:
+        ret[x] = (ret.get(x, 0) + 1)
+    return ret
 
 def archive(task_list: List[Task]) -> None:
     """
