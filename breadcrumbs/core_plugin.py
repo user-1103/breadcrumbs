@@ -4,11 +4,14 @@ Defines the core commands in a plugin.
 from datetime import datetime
 from json import loads
 from re import sub
+from subprocess import run
 from typing import Dict, Any
+from deep_translator.base import Path
 
 from pytodotxt import Task, TodoTxt
+from tempfile import NamedTemporaryFile, TemporaryFile
 from rich.table import Table
-from breadcrumbs.utils import add_task, archive, easy_lex, get_contexts, get_projects, get_tags, loaf_search, unarchive, get_buffer, set_buffer
+from breadcrumbs.utils import add_task, archive, drop_buffer, easy_lex, get_contexts, get_projects, get_tags, loaf_search, unarchive, get_buffer, set_buffer
 
 
 def print_buffer_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -53,12 +56,50 @@ def add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     - Saves. Sets selection buffer.
     """
     tmp = add_task(loaf, args)
+    if (not tmp.description):
+        return False
     res = loaf_search(loaf, span="1d-~", archived=False)
     conf["log"]["clear"]()
     conf["log"]["title"]("BREADCRUMB TRAIL")
     for x in res:
         conf["log"]["crumb"](x)
     set_buffer(conf, [tmp])
+    return True
+
+def export_json_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
+    """
+    - <path_to_save_to> -> The path to save too.
+    - Exports a the selection buffer as json.
+    - Does Not Save.
+    """
+    ...
+
+def edit_external_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
+    """
+    - <editor_command> -> Optional. If present the editor_command will be
+      executed with the %P replaced with the path to the current selection
+      buffer on disk. Otherwise the editor config is used.
+    - Opens an external editor to edit the selection buffer.
+    - Saves. Sets selection buffer.
+    """
+    if (args):
+        edit = args
+    else:
+        edit = conf['editor']
+    tmp = edit.replace("%P", (conf['breadbox'] + "/selection_buffer"))
+    try:
+        ret = run(tmp, shell= True, encoding='utf-8', check=True)
+    except Exception as e:
+        conf['log']['err']("Not saving...", e)
+        return False
+    else:
+        drop_buffer(conf)
+        t = TodoTxt(Path(conf['breadbox'] + '/selection_buffer'))
+        res = t.parse()
+        for x in res:
+            loaf.add(x)
+        set_buffer(conf, res)
+        print_buffer_cmd(conf, loaf, "")
     return True
 
 def block_add_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -253,7 +294,7 @@ def unarchive_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     conf["log"]["title"]("UNARCHIVED")
     for x in res:
         conf["log"]["crumb"](x)
-    conf["log"]["info"](f"Archived {len(res)} crumbs.")
+    conf["log"]["info"](f"Unarchived {len(res)} crumbs.")
     return True
 
 def select_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
@@ -285,6 +326,31 @@ def select_archive_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     for x in res:
         conf["log"]["crumb"](x)
     return True
+
+def sub_select_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
+    """
+    - No args.
+    - Enters a mode to sub select crumbs in the selection buffer.
+    - Does Not Save. Sets selection buffer.
+    """
+    res = get_buffer(conf)
+    conf["log"]["clear"]()
+    conf["log"]["title"]("SUB-SELECT MODE")
+    t = Table(title="Selection Buffer.")
+    t.add_column("ID")
+    t.add_column("Crumb")
+    for i, x in enumerate(res):
+        t.add_row(str(i), easy_lex(x))
+    conf["log"]["figure"](t)
+    sel = conf["log"]["prompt"](f"Space Seperated ID Selection")
+    sel_list = sel.split()
+    tmp = list()
+    for i, x in enumerate(res):
+        if (str(i) in sel_list):
+            tmp.append(x)
+    set_buffer(conf, tmp)
+    print_buffer_cmd(conf, loaf, args)
+    return False
 
 def advanced_select_cmd(conf: Dict[str, Any], loaf: TodoTxt, args: str) -> bool:
     """
@@ -375,6 +441,7 @@ def load_plugin() -> Dict[str, Any]:
         "lv": print_buffer_cmd,
         "e!": raw_add_cmd,
         "e": add_cmd,
+        "ex": edit_external_cmd,
         "b": block_add_cmd,
         "nop": nop_cmd,
         "ic": command_info_cmd,
@@ -390,6 +457,7 @@ def load_plugin() -> Dict[str, Any]:
         "s": substitute_cmd,
         "ip": projects_info_cmd,
         "ix": context_info_cmd,
+        "vv": sub_select_cmd,
         "it": tag_info_cmd
     }
 

@@ -114,7 +114,7 @@ def load_plugin() -> Dict[str, Any]:
         "PREMACRO": [],
         "PRECMD": [],
         "CMDERR": [],
-        "CMDOK": [check_future_hook],
+        "NULLOK": [check_future_hook],
         "POSTCMD": [],
         "EXIT": [],
         "SAFEEXIT": [],

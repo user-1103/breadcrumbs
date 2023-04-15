@@ -5,7 +5,7 @@ Module of common utilities for doing stuff.
 from datetime import date, datetime, time, timedelta
 from itertools import filterfalse
 from pathlib import Path
-from re import search
+from re import search, sub
 from typing import Any, Dict, List, Union, Tuple
 from copy import deepcopy
 from pytodotxt import Task, TodoTxt
@@ -365,6 +365,16 @@ def get_buffer(conf: Dict[str, Any]) -> List[Task]:
         conf["buffers"]["selection_buffer_exp"] = (old_time.time() + 30)
     return buffer
 
+def drop_buffer(conf: Dict[str, Any]) -> None:
+    """
+    Drops the active buffer. For right now this means archive, in the future it
+    may mean delete.
+
+    :param conf: The configuration where the buffer is located.
+    """
+    archive(conf["buffers"]["selection_buffer"])
+    conf["buffers"]["selection_buffer_exp"] = (old_time.time())
+
 def set_buffer(conf: Dict[str, Any], data: List[Task]) -> None:
     """
     Sets the active buffer, resets the timeout.
@@ -374,7 +384,9 @@ def set_buffer(conf: Dict[str, Any], data: List[Task]) -> None:
     """
     conf["buffers"]["selection_buffer"] = data
     conf["buffers"]["selection_buffer_exp"] = (old_time.time() + 30)
-
+    t = TodoTxt(Path(conf['breadbox'] + '/selection_buffer'))
+    t.tasks = data
+    t.save(safe=True)
 
 def easy_lex(text: Any) -> Syntax:
     """

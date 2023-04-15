@@ -449,7 +449,7 @@ def load_plugin() -> Dict[str, Any]:
         "PREMACRO": [],
         "PRECMD": [],
         "CMDERR": [],
-        "CMDOK": [check_metrics_hook],
+        "NULLOK": [check_metrics_hook],
         "POSTCMD": [],
         "EXIT": [],
         "SAFEEXIT": [],

@@ -24,8 +24,29 @@ LOAF: Union[None, TodoTxt] = None
 last_rec: Union[List[Union[str, None]], None] = None
 # time stamp of last rec update
 last_rec_time: float = time()
+# The readline conf to use if one is not found
+default_readline = """
+set editing-mode vi
+set keymap vi-command
+set show-mode-in-prompt on
+set vi-ins-mode-string \\1\\e[5 q\\2
+set vi-cmd-mode-string \\1\\e[1 q\\2
+"""
 
-readline.parse_and_bind("tab: complete")
+def init_readline() -> None:
+    """
+    Sets up readline. init_loaf MUST BE CALLED FIRST!
+    """
+    try:
+        input_file = CONFIG['breadbox']
+        input_file = input_file + "/inputrc"
+        readline.read_init_file([input_file])
+    except Exception as e:
+        tmp = default_readline.splitlines()
+        for x in tmp:
+            readline.parse_and_bind(x)
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer(complete)
 
 def complete(text, state) -> Union[None, str]:
     """
@@ -44,7 +65,7 @@ def complete(text, state) -> Union[None, str]:
         return None
     else:
         ret.append(None)
-    return (ret[state] + " ")
+    return (ret[state])
 
 def call_hooks(hook: str) -> None:
     """
@@ -176,6 +197,8 @@ def parse(user_input: str) -> None:
             break
     call_hooks('PRECMD')
     do_save = False
+    is_null_cmd = False
+    is_default_cmd = False
     try:
         if (args):
             cmd = buffers["cmd"]
@@ -192,15 +215,29 @@ def parse(user_input: str) -> None:
             do_save = cmd(CONFIG, LOAF, trim_arg)
         else:
             if (user_input.startswith("?")):
+                 is_default_cmd = True
                  do_save = CONFIG['default_command'](CONFIG, LOAF, user_input)
             elif (len(user_input)):
+                is_null_cmd = True
                 do_save = CONFIG['null_command'](CONFIG, LOAF, user_input)
     except Exception as e:
         buffers["err"] =  e
         call_hooks('CMDERR')
+        if (is_null_cmd):
+            call_hooks('NULLERR')
+        elif (is_default_cmd):
+            call_hooks('DEFAULTERR')
+        else:
+            call_hooks('OTHERERR')
         err("Failed To Run Command.", e)
     else:
         call_hooks('CMDOK')
+        if (is_null_cmd):
+            call_hooks('NULLOK')
+        elif (is_default_cmd):
+            call_hooks('DEFAULTOK')
+        else:
+            call_hooks('OTHEROK')
     call_hooks('POSTCMD')
     if (do_save):
         save(LOAF)
@@ -232,7 +269,9 @@ def run() -> None:
         p.advance(t1, 20)
         p.update(t1, description=f"Dusting Off Crumbs.")
     if (args.crumb_command):
-        parse(args.crumb_command)
+        tmp_split = args.crumb_command.split("&")
+        for x in tmp_split:
+            parse(x)
     else:
         repl()
     on_exit(None, None)
@@ -241,9 +280,11 @@ def repl() -> None:
     """
     Runs a repl to manage the crumbs.
     """
-    readline.set_completer(complete)
+    init_readline()
     CONFIG['log']['clear']()
     call_hooks("MOTD")
     while True:
         tmp = CONFIG['log']['prompt']()
-        parse(tmp)
+        tmp_split = tmp.split("&")
+        for x in tmp_split:
+            parse(x)

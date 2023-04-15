@@ -88,8 +88,20 @@ def load_plugin() -> Dict[str, Any]:
         "PRECMD": [],
         # Called on cmd err
         "CMDERR": [],
+        # Called on null command error
+        "NULLERR": [],
+        # Called on default command error
+        "DEFAULTERR": [],
+        # Called on other command error
+        "OTHERERR": [],
         # Called on cmd successful
         "CMDOK": [],
+        # Called on null command successfull
+        "NULLOK": [],
+        # Called on default command successfull
+        "DEFAULTOK": [],
+        # Called on other command successfull
+        "OTHEROK": [],
         # Called after command execution regardless
         "POSTCMD": [],
         # Called on exit regardless

@@ -6,7 +6,7 @@ The current bastard plugin.
 from datetime import date, time
 from re import search, sub
 from time import sleep
-from typing import Dict, Any
+from typing import Dict, Any, Match
 
 from breadcrumbs.metrics_plugin import run_total, span, total_table
 from breadcrumbs.utils import span_to_delta
@@ -25,13 +25,15 @@ def delta_macro(text: str) -> str:
     ..delta\\s(\\S*)
     <todays date + the provided span>
     """
-    tmp = search(r"\.\.delta\s(\S*)", text)
-    if (tmp is None):
-        return text
-    now = date.today()
-    delta = span_to_delta(tmp.groups()[0])
-    time_delta = (now + delta).isoformat()
-    text = sub(r"\.\.delta\s(\S*)", time_delta, text)
+    def replace(x: Match) -> str:
+        if (x is None):
+            return text
+        tmp = x.groups()[0]
+        now = date.today()
+        delta = span_to_delta(tmp)
+        time_delta = (now + delta).isoformat()
+        return time_delta
+    text = sub(r"\.\.delta\s(\S*)", replace, text)
     return text
 
 def now_macro(text: str) -> str:

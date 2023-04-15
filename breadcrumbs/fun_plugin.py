@@ -236,7 +236,7 @@ def load_plugin() -> Dict[str, Any]:
         "PREMACRO": [],
         "PRECMD": [],
         "CMDERR": [],
-        "CMDOK": [silly_toast_hook],
+        "NULLOK": [silly_toast_hook],
         "POSTCMD": [],
         "EXIT": [],
         "SAFEEXIT": [],
